@@ -3,7 +3,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { MapPin, Phone, Mail, Instagram, Facebook, Twitter } from "lucide-react";
 import Layout from "@/components/Layout";
 import {
