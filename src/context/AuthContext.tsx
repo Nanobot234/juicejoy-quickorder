@@ -1,6 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 import { User } from "../types";
+import { supabase } from "@/lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
   currentUser: User | null;
@@ -15,73 +18,94 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user database - in a real app, this would be in a backend
-const MOCK_USERS: Record<string, User> = {
-  "+12345678900": {
-    id: "user1",
-    phone: "+12345678900",
-    name: "John Doe",
-    email: "john@example.com"
-  },
-  "+12345678901": {
-    id: "user2",
-    phone: "+12345678901",
-    name: "Jane Smith",
-    email: "jane@example.com"
-  },
-  // Business owner account
-  "owner": {
-    id: "owner",
-    phone: "+19876543210",
-    name: "Business Owner",
-    email: "owner@juicejoy.com",
-    isBusinessOwner: true
-  }
-};
-
-// In a real app this would be stored securely in a database
-const BUSINESS_CREDENTIALS = {
-  username: "admin",
-  password: "juicejoy123"
-};
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check for existing session on load
   useEffect(() => {
-    const storedUser = localStorage.getItem("juicejoy-user");
-    if (storedUser) {
+    const checkSession = async () => {
       try {
-        const user = JSON.parse(storedUser);
-        setCurrentUser(user);
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) {
+          await fetchUserProfile(data.session);
+        }
       } catch (error) {
-        console.error("Failed to parse stored user", error);
-        localStorage.removeItem("juicejoy-user");
+        console.error("Error checking session:", error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+    
+    checkSession();
+    
+    // Listen for authentication state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          await fetchUserProfile(session);
+        } else if (event === 'SIGNED_OUT') {
+          setCurrentUser(null);
+        }
+      }
+    );
+    
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
+  
+  const fetchUserProfile = async (session: Session) => {
+    try {
+      // Get user profile from the profiles table
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        return;
+      }
+      
+      // Create user object with Supabase data
+      const user: User = {
+        id: session.user.id,
+        phone: session.user.phone || '',
+        name: data?.name || '',
+        email: session.user.email || '',
+        isBusinessOwner: data?.is_business_owner || false
+      };
+      
+      setCurrentUser(user);
+    } catch (error) {
+      console.error("Error processing user profile:", error);
+    }
+  };
 
   const sendVerificationCode = async (phone: string): Promise<boolean> => {
-    // In a real app, this would call an API to send an SMS
-    // For demo purposes, we'll just check if the user exists
     setIsLoading(true);
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       if (!phone.startsWith("+")) {
         toast.error("Phone number must include country code (e.g., +1...)");
         return false;
       }
       
-      // In a real app, we would always send the code regardless of whether
-      // the user exists already or not (for security reasons)
-      toast.success(`Verification code sent to ${phone}. Use 123456 to login.`);
+      // Send OTP via Supabase Auth
+      const { error } = await supabase.auth.signInWithOtp({
+        phone
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        return false;
+      }
+      
+      toast.success(`Verification code sent to ${phone}`);
       return true;
     } catch (error) {
+      console.error("Error sending verification code:", error);
       toast.error("Failed to send verification code");
       return false;
     } finally {
@@ -92,38 +116,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (phone: string, code: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify the OTP with Supabase Auth
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone,
+        token: code,
+        type: 'sms'
+      });
       
-      // In a real app, verify the code with a backend service
-      if (code !== "123456") {
-        toast.error("Invalid verification code");
+      if (error) {
+        toast.error(error.message || "Invalid verification code");
         return false;
       }
       
-      // Check if user exists in our mock database
-      const user = MOCK_USERS[phone];
-      
-      if (user) {
-        // Existing user
-        setCurrentUser(user);
-        localStorage.setItem("juicejoy-user", JSON.stringify(user));
+      if (data?.user) {
+        // Check if profile exists, create if it doesn't
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (!profile) {
+          // Create a new profile
+          await supabase.from('profiles').insert([
+            { id: data.user.id, phone: phone }
+          ]);
+        }
+        
         toast.success("Login successful");
         return true;
-      } else {
-        // New user - create an account
-        const newUser: User = {
-          id: `user${Date.now()}`,
-          phone
-        };
-        
-        MOCK_USERS[phone] = newUser;
-        setCurrentUser(newUser);
-        localStorage.setItem("juicejoy-user", JSON.stringify(newUser));
-        toast.success("Account created successfully");
-        return true;
       }
+      
+      return false;
     } catch (error) {
+      console.error("Error verifying code:", error);
       toast.error("Login failed");
       return false;
     } finally {
@@ -134,20 +160,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginAsBusinessOwner = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Using email/password auth for business accounts
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: username,
+        password
+      });
       
-      if (username === BUSINESS_CREDENTIALS.username && password === BUSINESS_CREDENTIALS.password) {
-        const owner = MOCK_USERS["owner"];
-        setCurrentUser(owner);
-        localStorage.setItem("juicejoy-user", JSON.stringify(owner));
-        toast.success("Business owner login successful");
-        return true;
-      } else {
-        toast.error("Invalid credentials");
+      if (error) {
+        toast.error(error.message || "Invalid credentials");
         return false;
       }
+      
+      // Check if this user is a business owner
+      if (data?.user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_business_owner')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profileError || !profile?.is_business_owner) {
+          // Not a business owner, sign out
+          await supabase.auth.signOut();
+          toast.error("This account does not have business owner privileges");
+          return false;
+        }
+        
+        toast.success("Business owner login successful");
+        return true;
+      }
+      
+      return false;
     } catch (error) {
+      console.error("Error logging in as business owner:", error);
       toast.error("Login failed");
       return false;
     } finally {
@@ -155,10 +200,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
   
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem("juicejoy-user");
-    toast.info("Logged out successfully");
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      toast.info("Logged out successfully");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to log out");
+    }
   };
 
   const value = {

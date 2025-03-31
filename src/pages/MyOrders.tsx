@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -9,6 +9,8 @@ import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const statusColors = {
   pending: "bg-yellow-500",
@@ -21,19 +23,18 @@ const statusColors = {
 const MyOrders = () => {
   const { currentUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [orders, setOrders] = React.useState<Order[]>([]);
   
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
-      return;
     }
+  }, [isAuthenticated, navigate]);
 
-    if (currentUser) {
-      const userOrders = getUserOrders(currentUser.id);
-      setOrders(userOrders);
-    }
-  }, [currentUser, isAuthenticated, navigate]);
+  const { data: orders, isLoading, error } = useQuery({
+    queryKey: ['userOrders', currentUser?.id],
+    queryFn: () => getUserOrders(currentUser?.id || ''),
+    enabled: !!currentUser?.id
+  });
   
   const getStatusBadge = (status: Order["status"]) => {
     return (
@@ -52,13 +53,46 @@ const MyOrders = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-juicy-green" />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-3xl font-bold mb-8">My Orders</h1>
+            <div className="text-center py-12">
+              <p className="text-red-500 mb-4">There was an error loading your orders.</p>
+              <button
+                onClick={() => navigate("/menu")}
+                className="text-juicy-green hover:underline"
+              >
+                Browse our menu to place an order
+              </button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">My Orders</h1>
           
-          {orders.length === 0 ? (
+          {!orders || orders.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 mb-4">You don't have any orders yet.</p>
               <button
