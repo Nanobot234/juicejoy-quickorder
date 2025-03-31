@@ -1,11 +1,18 @@
 
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { ShoppingCart, Menu, X } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { ShoppingCart, Menu as MenuIcon, X, LogIn, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,7 +20,9 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { state } = useCart();
+  const { currentUser, isAuthenticated, isBusinessOwner, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -27,6 +36,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
   };
 
   return (
@@ -56,7 +70,45 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             ))}
           </nav>
 
-          <div className="flex items-center">
+          <div className="flex items-center space-x-2">
+            {/* Authentication Menu */}
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="mr-2">
+                    <User className="h-5 w-5 mr-1" />
+                    <span className="hidden sm:inline">
+                      {currentUser?.name || "Account"}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {isBusinessOwner ? (
+                    <DropdownMenuItem onClick={() => navigate("/business-dashboard")}>
+                      Dashboard
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => navigate("/my-orders")}>
+                      My Orders
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" /> Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="mr-2"
+                onClick={() => navigate("/login")}
+              >
+                <LogIn className="h-5 w-5 mr-1" />
+                <span className="hidden sm:inline">Login</span>
+              </Button>
+            )}
+            
             <NavLink to="/cart" className="relative mr-2">
               <Button variant="ghost" className="rounded-full p-2">
                 <ShoppingCart className="h-6 w-6 text-gray-600" />
@@ -73,7 +125,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" onClick={toggleMenu}>
-                    <Menu className="h-6 w-6" />
+                    <MenuIcon className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[250px] sm:w-[300px]">
@@ -101,6 +153,65 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           {item.label}
                         </NavLink>
                       ))}
+                      
+                      {isAuthenticated ? (
+                        <>
+                          {isBusinessOwner ? (
+                            <NavLink
+                              to="/business-dashboard"
+                              onClick={() => setIsMenuOpen(false)}
+                              className={({ isActive }) =>
+                                `px-2 py-2 rounded-md ${
+                                  isActive
+                                    ? "bg-juicy-green/10 text-juicy-green font-medium"
+                                    : "text-gray-600 hover:bg-juicy-green/5 hover:text-juicy-green"
+                                }`
+                              }
+                            >
+                              Dashboard
+                            </NavLink>
+                          ) : (
+                            <NavLink
+                              to="/my-orders"
+                              onClick={() => setIsMenuOpen(false)}
+                              className={({ isActive }) =>
+                                `px-2 py-2 rounded-md ${
+                                  isActive
+                                    ? "bg-juicy-green/10 text-juicy-green font-medium"
+                                    : "text-gray-600 hover:bg-juicy-green/5 hover:text-juicy-green"
+                                }`
+                              }
+                            >
+                              My Orders
+                            </NavLink>
+                          )}
+                          <Button
+                            variant="ghost"
+                            className="justify-start px-2 py-6 h-auto font-normal"
+                            onClick={() => {
+                              handleLogout();
+                              setIsMenuOpen(false);
+                            }}
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Logout
+                          </Button>
+                        </>
+                      ) : (
+                        <NavLink
+                          to="/login"
+                          onClick={() => setIsMenuOpen(false)}
+                          className={({ isActive }) =>
+                            `px-2 py-2 rounded-md ${
+                              isActive
+                                ? "bg-juicy-green/10 text-juicy-green font-medium"
+                                : "text-gray-600 hover:bg-juicy-green/5 hover:text-juicy-green"
+                            }`
+                          }
+                        >
+                          Login
+                        </NavLink>
+                      )}
                     </nav>
                   </div>
                 </SheetContent>
@@ -144,6 +255,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     Cart
                   </NavLink>
                 </li>
+                {isAuthenticated && !isBusinessOwner && (
+                  <li>
+                    <NavLink 
+                      to="/my-orders" 
+                      className="text-gray-600 hover:text-juicy-green transition-colors"
+                    >
+                      My Orders
+                    </NavLink>
+                  </li>
+                )}
               </ul>
             </div>
             <div>

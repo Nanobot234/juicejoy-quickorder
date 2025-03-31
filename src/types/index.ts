@@ -25,3 +25,21 @@ export interface OrderDetails {
   deliveryMethod: DeliveryMethod;
   paymentMethod: PaymentMethod;
 }
+
+export interface User {
+  id: string;
+  phone: string;
+  name?: string;
+  email?: string;
+  isBusinessOwner?: boolean;
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  items: CartItem[];
+  orderDetails: OrderDetails;
+  total: number;
+  status: "pending" | "preparing" | "ready" | "delivered" | "completed";
+  createdAt: string;
+}
