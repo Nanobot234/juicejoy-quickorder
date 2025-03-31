@@ -12,9 +12,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger, 
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 
-interface OrderManagementTableProps {
+export interface OrderManagementTableProps {
   orders: Order[];
   onStatusChange: (orderId: string, status: Order["status"]) => void;
 }
@@ -127,3 +126,4 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
 };
 
 export default OrderManagementTable;
+
