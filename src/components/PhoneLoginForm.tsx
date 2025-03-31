@@ -2,13 +2,11 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/context/AuthContext";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Loader2 } from "lucide-react";
 
 // Step 1: User enters phone number
@@ -125,17 +123,17 @@ const PhoneLoginForm = () => {
                 <FormItem className="space-y-2 flex flex-col items-center">
                   <FormLabel>Verification Code</FormLabel>
                   <FormControl>
-                    <div className="flex justify-center">
-                      <Input 
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={6}
-                        placeholder="123456"
-                        className="text-center tracking-widest text-xl w-48"
-                        {...field}
-                      />
-                    </div>
+                    <Input 
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      placeholder="123456"
+                      className="text-center tracking-widest text-xl w-48"
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      disabled={isLoading}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -146,7 +144,7 @@ const PhoneLoginForm = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-juicy-green hover:bg-juicy-green/90" 
-                disabled={isLoading || codeForm.watch("code")?.length !== 6}
+                disabled={isLoading || !codeForm.watch("code") || codeForm.watch("code").length !== 6}
               >
                 {isLoading ? (
                   <>
