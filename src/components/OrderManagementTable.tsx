@@ -12,12 +12,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger, 
 } from "@/components/ui/dropdown-menu";
-import { updateOrderStatus } from "@/services/ordersService";
 import { toast } from "sonner";
 
 interface OrderManagementTableProps {
   orders: Order[];
-  onOrderUpdate: (orderId: string, status: Order["status"]) => void;
+  onStatusChange: (orderId: string, status: Order["status"]) => void;
 }
 
 const statusColors = {
@@ -38,24 +37,13 @@ const statusIcons = {
 
 const statusOptions: Order["status"][] = ["pending", "preparing", "ready", "delivered", "completed"];
 
-const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onOrderUpdate }) => {
+const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onStatusChange }) => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
       return formatDistanceToNow(date, { addSuffix: true });
     } catch (error) {
       return dateString;
-    }
-  };
-  
-  const handleStatusChange = (order: Order, status: Order["status"]) => {
-    try {
-      updateOrderStatus(order.id, status);
-      onOrderUpdate(order.id, status);
-      toast.success(`Order #${order.id.slice(-5)} status updated to ${status}`);
-    } catch (error) {
-      console.error("Error updating order status:", error);
-      toast.error("Failed to update order status");
     }
   };
   
@@ -117,7 +105,7 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onO
                         <DropdownMenuItem 
                           key={status}
                           className="capitalize"
-                          onClick={() => handleStatusChange(order, status)}
+                          onClick={() => onStatusChange(order.id, status)}
                           disabled={order.status === status}
                         >
                           <div className="flex items-center gap-2">
