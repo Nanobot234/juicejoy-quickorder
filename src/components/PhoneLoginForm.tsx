@@ -123,21 +123,19 @@ const PhoneLoginForm = () => {
               name="code"
               render={({ field }) => (
                 <FormItem className="space-y-2 flex flex-col items-center">
+                  <FormLabel>Verification Code</FormLabel>
                   <FormControl>
-                    <InputOTP 
-                      maxLength={6} 
-                      value={field.value} 
-                      onChange={field.onChange}
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
+                    <div className="flex justify-center">
+                      <Input 
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={6}
+                        placeholder="123456"
+                        className="text-center tracking-widest text-xl w-48"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
