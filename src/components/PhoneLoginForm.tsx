@@ -124,7 +124,11 @@ const PhoneLoginForm = () => {
               render={({ field }) => (
                 <FormItem className="space-y-2 flex flex-col items-center">
                   <FormControl>
-                    <InputOTP maxLength={6} {...field}>
+                    <InputOTP 
+                      maxLength={6} 
+                      value={field.value} 
+                      onChange={field.onChange}
+                    >
                       <InputOTPGroup>
                         <InputOTPSlot index={0} />
                         <InputOTPSlot index={1} />
@@ -144,7 +148,7 @@ const PhoneLoginForm = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-juicy-green hover:bg-juicy-green/90" 
-                disabled={isLoading}
+                disabled={isLoading || codeForm.watch("code")?.length !== 6}
               >
                 {isLoading ? (
                   <>
