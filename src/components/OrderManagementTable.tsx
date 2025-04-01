@@ -126,4 +126,3 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
 };
 
 export default OrderManagementTable;
-

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Layout from "@/components/Layout";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import {
   Form,
   FormControl,
@@ -22,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { OrderDetails, DeliveryMethod, PaymentMethod } from "@/types";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -35,22 +37,29 @@ const formSchema = z.object({
 
 const Checkout = () => {
   const { state, clearCart } = useCart();
+  const { currentUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty or user not authenticated
   React.useEffect(() => {
     if (state.items.length === 0) {
       navigate("/menu");
+      return;
     }
-  }, [state.items.length, navigate]);
+    
+    if (!isAuthenticated) {
+      toast.error("Please login to complete your order");
+      navigate("/login");
+    }
+  }, [state.items.length, navigate, isAuthenticated]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      phone: "",
-      email: "",
+      name: currentUser?.name || "",
+      phone: currentUser?.phone || "",
+      email: currentUser?.email || "",
       address: "",
       deliveryMethod: "pickup",
       paymentMethod: "cash",
@@ -63,9 +72,13 @@ const Checkout = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     
-    // Simulate API call
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Validate required fields for delivery
+      if (values.deliveryMethod === 'delivery' && (!values.address || values.address.trim() === '')) {
+        toast.error("Please provide a delivery address");
+        setIsSubmitting(false);
+        return;
+      }
       
       const orderDetails: OrderDetails = {
         name: values.name,
@@ -81,13 +94,11 @@ const Checkout = () => {
       sessionStorage.setItem("orderItems", JSON.stringify(state.items));
       sessionStorage.setItem("orderTotal", state.total.toString());
       
-      // Clear the cart
-      clearCart();
-      
       // Navigate to confirmation page
       navigate("/order-confirmation");
     } catch (error) {
       console.error("Error processing order:", error);
+      toast.error("Error processing your order. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

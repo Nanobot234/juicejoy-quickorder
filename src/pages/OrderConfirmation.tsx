@@ -3,48 +3,72 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCart } from "@/context/CartContext";
-import { Order } from "@/types";
+import { useAuth } from "@/context/AuthContext";
+import { Order, OrderDetails } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { createOrder } from "@/services/ordersService";
 
 const OrderConfirmation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { clearCart } = useCart();
+  const { currentUser } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadOrder = async () => {
+    const processOrder = async () => {
       try {
-        // Check if we have an order promise from the location state
-        if (location.state?.orderPromise) {
-          const orderPromise = location.state.orderPromise;
-          const resolvedOrder = await orderPromise;
-          
-          if (resolvedOrder) {
-            setOrder(resolvedOrder);
-            clearCart();
-          } else {
-            toast.error("Could not retrieve order details");
-            navigate("/");
-          }
+        setIsLoading(true);
+        
+        // Get order details from sessionStorage (set during checkout)
+        const orderDetailsStr = sessionStorage.getItem("orderDetails");
+        const orderItemsStr = sessionStorage.getItem("orderItems");
+        const orderTotalStr = sessionStorage.getItem("orderTotal");
+        
+        if (!orderDetailsStr || !orderItemsStr || !orderTotalStr || !currentUser) {
+          toast.error("Missing order information");
+          navigate("/menu");
+          return;
+        }
+
+        const orderDetails: OrderDetails = JSON.parse(orderDetailsStr);
+        const orderItems = JSON.parse(orderItemsStr);
+        const orderTotal = parseFloat(orderTotalStr);
+        
+        // Create order in database
+        const createdOrder = await createOrder(
+          currentUser.id,
+          orderItems,
+          orderDetails,
+          orderTotal
+        );
+        
+        if (createdOrder) {
+          setOrder(createdOrder);
+          // Clear session storage and cart after successful order
+          sessionStorage.removeItem("orderDetails");
+          sessionStorage.removeItem("orderItems");
+          sessionStorage.removeItem("orderTotal");
+          clearCart();
+          toast.success("Order placed successfully!");
         } else {
-          // No order in state, redirect to home
-          navigate("/");
+          toast.error("Could not create order");
+          navigate("/checkout");
         }
       } catch (error) {
-        console.error("Error loading order:", error);
-        toast.error("An error occurred while loading your order");
-        navigate("/");
+        console.error("Error processing order:", error);
+        toast.error("An error occurred while processing your order");
+        navigate("/checkout");
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadOrder();
-  }, [location.state, navigate, clearCart]);
+    processOrder();
+  }, [currentUser, navigate, clearCart]);
 
   if (isLoading) {
     return (
