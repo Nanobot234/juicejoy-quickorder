@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Layout from "@/components/Layout";
-import PhoneLoginForm from "@/components/PhoneLoginForm";
+import EmailLoginForm from "@/components/EmailLoginForm";
 import BusinessLoginForm from "@/components/BusinessLoginForm";
 import { useAuth } from "@/context/AuthContext";
 
@@ -36,7 +36,7 @@ const Login = () => {
               <TabsTrigger value="business">Business Owner</TabsTrigger>
             </TabsList>
             <TabsContent value="customer">
-              <PhoneLoginForm />
+              <EmailLoginForm />
             </TabsContent>
             <TabsContent value="business">
               <BusinessLoginForm />

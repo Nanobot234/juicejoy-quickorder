@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 import { User } from "../types";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
@@ -10,10 +10,10 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isBusinessOwner: boolean;
-  login: (phone: string, code: string) => Promise<boolean>;
+  loginWithEmail: (email: string, password: string) => Promise<boolean>;
+  signupWithEmail: (email: string, password: string) => Promise<boolean>;
   loginAsBusinessOwner: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
-  sendVerificationCode: (phone: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,10 +72,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Create user object with Supabase data
       const user: User = {
         id: session.user.id,
-        phone: session.user.phone || '',
+        phone: data?.phone || '',
         name: data?.name || '',
         email: session.user.email || '',
-        isBusinessOwner: data?.is_business_owner || false
+        isBusinessOwner: data?.role === 'business_owner' || false
       };
       
       setCurrentUser(user);
@@ -84,17 +84,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const sendVerificationCode = async (phone: string): Promise<boolean> => {
+  const signupWithEmail = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      if (!phone.startsWith("+")) {
-        toast.error("Phone number must include country code (e.g., +1...)");
-        return false;
-      }
-      
-      // Send OTP via Supabase Auth
-      const { error } = await supabase.auth.signInWithOtp({
-        phone
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
       });
       
       if (error) {
@@ -102,54 +97,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
       
-      toast.success(`Verification code sent to ${phone}`);
-      return true;
+      if (data.user) {
+        toast.success("Account created successfully!");
+        return true;
+      }
+      
+      return false;
     } catch (error) {
-      console.error("Error sending verification code:", error);
-      toast.error("Failed to send verification code");
+      console.error("Error signing up:", error);
+      toast.error("Failed to create account");
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (phone: string, code: string): Promise<boolean> => {
+  const loginWithEmail = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Verify the OTP with Supabase Auth
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone,
-        token: code,
-        type: 'sms'
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
       
       if (error) {
-        toast.error(error.message || "Invalid verification code");
+        toast.error(error.message);
         return false;
       }
       
-      if (data?.user) {
-        // Check if profile exists, create if it doesn't
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-        
-        if (!profile) {
-          // Create a new profile
-          await supabase.from('profiles').insert([
-            { id: data.user.id, phone: phone }
-          ]);
-        }
-        
+      if (data.user) {
         toast.success("Login successful");
         return true;
       }
       
       return false;
     } catch (error) {
-      console.error("Error verifying code:", error);
+      console.error("Error logging in:", error);
       toast.error("Login failed");
       return false;
     } finally {
@@ -175,11 +158,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (data?.user) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('is_business_owner')
+          .select('role')
           .eq('id', data.user.id)
           .single();
         
-        if (profileError || !profile?.is_business_owner) {
+        if (profileError || profile?.role !== 'business_owner') {
           // Not a business owner, sign out
           await supabase.auth.signOut();
           toast.error("This account does not have business owner privileges");
@@ -216,10 +199,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isLoading,
     isAuthenticated: !!currentUser,
     isBusinessOwner: !!currentUser?.isBusinessOwner,
-    login,
+    loginWithEmail,
+    signupWithEmail,
     loginAsBusinessOwner,
-    logout,
-    sendVerificationCode
+    logout
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
