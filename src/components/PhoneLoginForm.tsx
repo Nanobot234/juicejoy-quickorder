@@ -8,6 +8,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 // Step 1: User enters phone number
 // Step 2: Verification code is sent
@@ -26,7 +27,7 @@ const verificationSchema = z.object({
 });
 
 const PhoneLoginForm = () => {
-  const { sendVerificationCode, login, isLoading } = useAuth();
+  const { loginWithEmail, isLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
 
   // Form for phone number entry
@@ -49,15 +50,22 @@ const PhoneLoginForm = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
 
   const handlePhoneSubmit = async (values: z.infer<typeof phoneSchema>) => {
-    const success = await sendVerificationCode(values.phone);
-    if (success) {
-      setPhoneNumber(values.phone);
-      setCurrentStep(2);
-    }
+    // Since we're moving to email authentication, let's mock this function with a toast
+    toast.info("Phone authentication is not currently supported. Please use email authentication instead.");
+    // For demo purposes, still allow proceeding to next step
+    setPhoneNumber(values.phone);
+    setCurrentStep(2);
   };
 
   const handleVerificationSubmit = async (values: z.infer<typeof verificationSchema>) => {
-    await login(phoneNumber, values.code);
+    // Demo verification
+    if (values.code === "123456") {
+      toast.success("Demo verification successful! In a real app, this would log you in.");
+      // This is just for demonstration, not actual authentication
+      // In a real app with phone auth, we would call an appropriate login method here
+    } else {
+      toast.error("Invalid verification code. For demo purposes, use 123456.");
+    }
   };
 
   const handleBackToPhone = () => {
