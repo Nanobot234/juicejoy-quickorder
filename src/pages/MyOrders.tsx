@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -8,9 +9,11 @@ import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShoppingBag, ListFilter } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useCart } from "@/context/CartContext";
+import { Button } from "@/components/ui/button";
 
 const statusColors = {
   pending: "bg-yellow-500",
@@ -23,6 +26,7 @@ const statusColors = {
 const MyOrders = () => {
   const { currentUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { state: cartState } = useCart();
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -43,7 +47,8 @@ const MyOrders = () => {
       }
       return getUserOrders(currentUser.id);
     },
-    enabled: !!currentUser?.id
+    enabled: !!currentUser?.id,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   });
   
   useEffect(() => {
@@ -106,7 +111,28 @@ const MyOrders = () => {
     <Layout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">My Orders</h1>
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">My Orders</h1>
+            
+            <div className="flex space-x-3">
+              {cartState.items.length > 0 && (
+                <Button
+                  onClick={() => navigate("/cart")}
+                  className="flex items-center bg-juicy-orange hover:bg-juicy-orange/90"
+                >
+                  <ShoppingBag className="h-4 w-4 mr-2" /> 
+                  View Cart ({cartState.items.length})
+                </Button>
+              )}
+              
+              <Button 
+                onClick={() => navigate("/menu")} 
+                className="bg-juicy-green hover:bg-juicy-green/90"
+              >
+                Order Now
+              </Button>
+            </div>
+          </div>
           
           {!orders || orders.length === 0 ? (
             <div className="text-center py-12">

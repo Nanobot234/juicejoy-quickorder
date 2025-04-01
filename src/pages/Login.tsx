@@ -7,21 +7,26 @@ import EmailLoginForm from "@/components/EmailLoginForm";
 import BusinessLoginForm from "@/components/BusinessLoginForm";
 import PhoneLoginForm from "@/components/PhoneLoginForm";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isBusinessOwner } = useAuth();
+  const { isAuthenticated, isBusinessOwner, currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("customer");
 
   useEffect(() => {
+    // Check if user is authenticated and redirect accordingly
     if (isAuthenticated) {
       if (isBusinessOwner) {
+        console.log("Redirecting business owner to dashboard");
         navigate("/business-dashboard");
       } else {
+        console.log("Redirecting customer to my orders", currentUser);
+        toast.success("Welcome back! Your orders are ready.");
         navigate("/my-orders");
       }
     }
-  }, [isAuthenticated, isBusinessOwner, navigate]);
+  }, [isAuthenticated, isBusinessOwner, navigate, currentUser]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
