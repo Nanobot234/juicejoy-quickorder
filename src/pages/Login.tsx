@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Layout from "@/components/Layout";
 import EmailLoginForm from "@/components/EmailLoginForm";
 import BusinessLoginForm from "@/components/BusinessLoginForm";
+import PhoneLoginForm from "@/components/PhoneLoginForm";
 import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
@@ -36,7 +37,18 @@ const Login = () => {
               <TabsTrigger value="business">Business Owner</TabsTrigger>
             </TabsList>
             <TabsContent value="customer">
-              <EmailLoginForm />
+              <Tabs defaultValue="email" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="email">Email</TabsTrigger>
+                  <TabsTrigger value="phone">Phone</TabsTrigger>
+                </TabsList>
+                <TabsContent value="email">
+                  <EmailLoginForm />
+                </TabsContent>
+                <TabsContent value="phone">
+                  <PhoneLoginForm />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
             <TabsContent value="business">
               <BusinessLoginForm />

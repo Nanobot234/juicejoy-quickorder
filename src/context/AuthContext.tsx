@@ -13,6 +13,7 @@ interface AuthContextType {
   loginWithEmail: (email: string, password: string) => Promise<boolean>;
   signupWithEmail: (email: string, password: string) => Promise<boolean>;
   loginAsBusinessOwner: (username: string, password: string) => Promise<boolean>;
+  signupAsBusinessOwner: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -42,6 +43,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Listen for authentication state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
         if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           await fetchUserProfile(session);
         } else if (event === 'SIGNED_OUT') {
@@ -57,6 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
   const fetchUserProfile = async (session: Session) => {
     try {
+      console.log("Fetching profile for user:", session.user.id);
       // Get user profile from the profiles table
       const { data, error } = await supabase
         .from('profiles')
@@ -69,6 +72,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
       
+      console.log("User profile data:", data);
+      
       // Create user object with Supabase data
       const user: User = {
         id: session.user.id,
@@ -78,6 +83,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isBusinessOwner: data?.role === 'business_owner' || false
       };
       
+      console.log("Setting current user:", user);
       setCurrentUser(user);
     } catch (error) {
       console.error("Error processing user profile:", error);
@@ -106,6 +112,46 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error("Error signing up:", error);
       toast.error("Failed to create account");
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signupAsBusinessOwner = async (email: string, password: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        return false;
+      }
+      
+      if (data.user) {
+        // Update the profile to mark this user as a business owner
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ role: 'business_owner' })
+          .eq('id', data.user.id);
+          
+        if (profileError) {
+          console.error("Error updating profile as business owner:", profileError);
+          toast.error("Account created, but failed to set business owner status");
+          return false;
+        }
+        
+        toast.success("Business account created successfully!");
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error signing up as business owner:", error);
+      toast.error("Failed to create business account");
       return false;
     } finally {
       setIsLoading(false);
@@ -202,6 +248,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     loginWithEmail,
     signupWithEmail,
     loginAsBusinessOwner,
+    signupAsBusinessOwner,
     logout
   };
 

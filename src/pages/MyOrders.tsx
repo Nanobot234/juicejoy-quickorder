@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -11,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const statusColors = {
   pending: "bg-yellow-500",
@@ -27,14 +27,30 @@ const MyOrders = () => {
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
+      return;
     }
-  }, [isAuthenticated, navigate]);
+    
+    console.log("Current user in MyOrders:", currentUser);
+  }, [isAuthenticated, navigate, currentUser]);
 
-  const { data: orders, isLoading, error } = useQuery({
+  const { data: orders, isLoading, error, refetch } = useQuery({
     queryKey: ['userOrders', currentUser?.id],
-    queryFn: () => getUserOrders(currentUser?.id || ''),
+    queryFn: () => {
+      console.log("Query function called with user ID:", currentUser?.id);
+      if (!currentUser?.id) {
+        console.error("No user ID available for fetching orders");
+        return [];
+      }
+      return getUserOrders(currentUser.id);
+    },
     enabled: !!currentUser?.id
   });
+  
+  useEffect(() => {
+    if (isAuthenticated && currentUser?.id) {
+      refetch();
+    }
+  }, [isAuthenticated, currentUser?.id, refetch]);
   
   const getStatusBadge = (status: Order["status"]) => {
     return (

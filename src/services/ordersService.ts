@@ -1,6 +1,6 @@
 
 import { CartItem, Order, OrderDetails } from "../types";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 export const createOrder = async (userId: string, items: CartItem[], orderDetails: OrderDetails, total: number): Promise<Order | null> => {
   try {
@@ -33,6 +33,13 @@ export const createOrder = async (userId: string, items: CartItem[], orderDetail
 
 export const getUserOrders = async (userId: string): Promise<Order[]> => {
   try {
+    if (!userId) {
+      console.error("No userId provided to getUserOrders");
+      return [];
+    }
+    
+    console.log("Fetching orders for user:", userId);
+    
     const { data, error } = await supabase
       .from('orders')
       .select('*')
@@ -44,6 +51,7 @@ export const getUserOrders = async (userId: string): Promise<Order[]> => {
       return [];
     }
     
+    console.log("Orders retrieved:", data);
     return data as Order[];
   } catch (error) {
     console.error("Error in getUserOrders:", error);
