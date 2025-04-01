@@ -1,7 +1,6 @@
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import TooltipProviderWrapper from "./components/TooltipProviderWrapper";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
@@ -16,36 +15,39 @@ import Login from "./pages/Login";
 import MyOrders from "./pages/MyOrders";
 import BusinessDashboard from "./pages/BusinessDashboard";
 import NotFound from "./pages/NotFound";
+import { TooltipProvider } from "./components/ui/tooltip";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <TooltipProviderWrapper>
+    <React.Fragment>
+      <BrowserRouter>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <CartProvider>
-              <Toaster />
-              <Sonner />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/menu" element={<Menu />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/my-orders" element={<MyOrders />} />
-                <Route path="/business-dashboard" element={<BusinessDashboard />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </CartProvider>
-          </AuthProvider>
+          <TooltipProvider>
+            <AuthProvider>
+              <CartProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/menu" element={<Menu />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/my-orders" element={<MyOrders />} />
+                  <Route path="/business-dashboard" element={<BusinessDashboard />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </CartProvider>
+            </AuthProvider>
+          </TooltipProvider>
         </QueryClientProvider>
-      </TooltipProviderWrapper>
-    </BrowserRouter>
+      </BrowserRouter>
+    </React.Fragment>
   );
 };
 
