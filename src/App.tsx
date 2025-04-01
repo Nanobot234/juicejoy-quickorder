@@ -1,7 +1,7 @@
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@radix-ui/react-tooltip";
+import TooltipProviderWrapper from "./components/TooltipProviderWrapper";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
@@ -22,11 +22,11 @@ const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <TooltipProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <CartProvider>
-            <BrowserRouter>
+    <BrowserRouter>
+      <TooltipProviderWrapper>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <CartProvider>
               <Toaster />
               <Sonner />
               <Routes>
@@ -41,11 +41,11 @@ const App = () => {
                 <Route path="/business-dashboard" element={<BusinessDashboard />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </CartProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </TooltipProvider>
+            </CartProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </TooltipProviderWrapper>
+    </BrowserRouter>
   );
 };
 
