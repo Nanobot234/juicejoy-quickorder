@@ -14,11 +14,25 @@ const OrderConfirmation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { clearCart } = useCart();
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated, isBusinessOwner } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Redirect business owners - they shouldn't be able to place orders
+    if (isBusinessOwner) {
+      toast.error("Business accounts cannot place orders. Please use a customer account.");
+      navigate("/menu");
+      return;
+    }
+    
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      toast.error("You must be logged in to place an order");
+      navigate("/login");
+      return;
+    }
+    
     const processOrder = async () => {
       try {
         setIsLoading(true);
@@ -68,7 +82,7 @@ const OrderConfirmation = () => {
     };
 
     processOrder();
-  }, [currentUser, navigate, clearCart]);
+  }, [currentUser, navigate, clearCart, isAuthenticated, isBusinessOwner]);
 
   if (isLoading) {
     return (
