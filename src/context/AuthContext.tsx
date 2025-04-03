@@ -15,6 +15,7 @@ interface AuthContextType {
   loginAsBusinessOwner: (username: string, password: string) => Promise<boolean>;
   signupAsBusinessOwner: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  setCurrentUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -249,7 +250,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     signupWithEmail,
     loginAsBusinessOwner,
     signupAsBusinessOwner,
-    logout
+    logout,
+    setCurrentUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
