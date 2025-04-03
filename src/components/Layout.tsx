@@ -20,7 +20,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { state } = useCart();
-  const { currentUser, isAuthenticated, isBusinessOwner, logout } = useAuth();
+  const { currentUser, setCurrentUser, isAuthenticated, isBusinessOwner, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -39,7 +39,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const handleLogout = () => {
+    console.log("layout logout");
     logout();
+    localStorage.clear();
+    setCurrentUser(null);
     navigate("/");
   };
 

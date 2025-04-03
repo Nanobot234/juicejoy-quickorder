@@ -16,7 +16,7 @@ import MyOrders from "./pages/MyOrders";
 import BusinessDashboard from "./pages/BusinessDashboard";
 import NotFound from "./pages/NotFound";
 import { TooltipProvider } from "./components/ui/tooltip";
-
+import React from "react";
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
 
