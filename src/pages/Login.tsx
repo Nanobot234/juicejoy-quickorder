@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,16 +16,15 @@ const Login = () => {
   useEffect(() => {
     console.log("Login page: auth state", { isAuthenticated, isBusinessOwner, currentUser });
     
-    // Check if user is authenticated and redirect accordingly
     if (isAuthenticated) {
       if (isBusinessOwner) {
         console.log("Redirecting business owner to dashboard");
         toast.success("Welcome to your business dashboard!");
         navigate("/business-dashboard");
       } else {
-        console.log("Redirecting customer to my orders", currentUser);
-        toast.success("Welcome back! You can now place orders.");
-        navigate("/menu");
+        console.log("Redirecting customer to dashboard", currentUser);
+        toast.success("Welcome back!");
+        navigate("/customer-dashboard");
       }
     }
   }, [isAuthenticated, isBusinessOwner, navigate, currentUser]);
