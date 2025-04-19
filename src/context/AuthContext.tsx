@@ -66,10 +66,54 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle cases where profile doesn't exist
         
       if (error) {
         console.error("Error fetching user profile:", error);
+        return;
+      }
+      
+      // If no profile exists, create one
+      if (!data) {
+        console.log("No profile found, creating one for user:", session.user.id);
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: session.user.id,
+            email: session.user.email,
+            role: 'customer' // Default role
+          });
+          
+        if (insertError) {
+          console.error("Error creating user profile:", insertError);
+          return;
+        }
+        
+        // Fetch the newly created profile
+        const { data: newProfile, error: fetchError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (fetchError) {
+          console.error("Error fetching new user profile:", fetchError);
+          return;
+        }
+        
+        console.log("Created new profile:", newProfile);
+        
+        // Create user object with the new profile data
+        const user: User = {
+          id: session.user.id,
+          phone: newProfile?.phone || '',
+          name: newProfile?.name || '',
+          email: session.user.email || '',
+          isBusinessOwner: newProfile?.role === 'business_owner' || false
+        };
+        
+        console.log("Setting current user:", user);
+        setCurrentUser(user);
         return;
       }
       
