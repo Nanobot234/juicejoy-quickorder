@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 import { User } from "../types";
@@ -66,7 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
-        .maybeSingle(); // Use maybeSingle instead of single to handle cases where profile doesn't exist
+        .maybeSingle();
         
       if (error) {
         console.error("Error fetching user profile:", error);
@@ -86,6 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           
         if (insertError) {
           console.error("Error creating user profile:", insertError);
+          toast.error("Failed to create user profile");
           return;
         }
         
@@ -114,10 +114,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         console.log("Setting current user:", user);
         setCurrentUser(user);
+        setIsLoading(false);
         return;
       }
       
-      console.log("User profile data:", data);
+      console.log("User profile data found:", data);
       
       // Create user object with Supabase data
       const user: User = {
@@ -130,8 +131,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       console.log("Setting current user:", user);
       setCurrentUser(user);
+      setIsLoading(false);
     } catch (error) {
       console.error("Error processing user profile:", error);
+      setIsLoading(false);
     }
   };
 

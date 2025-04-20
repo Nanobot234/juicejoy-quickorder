@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Layout from "@/components/Layout";
@@ -11,13 +11,15 @@ import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isBusinessOwner, currentUser } = useAuth();
-  const [activeTab, setActiveTab] = React.useState("customer");
+  const { isAuthenticated, isBusinessOwner, currentUser, isLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState("customer");
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    console.log("Login page: auth state", { isAuthenticated, isBusinessOwner, currentUser });
+    console.log("Login page: auth state", { isAuthenticated, isBusinessOwner, currentUser, isLoading });
     
-    if (isAuthenticated) {
+    if (isAuthenticated && !redirecting && !isLoading) {
+      setRedirecting(true);
       if (isBusinessOwner) {
         console.log("Redirecting business owner to dashboard");
         toast.success("Welcome to your business dashboard!");
@@ -28,7 +30,7 @@ const Login = () => {
         navigate("/customer-dashboard");
       }
     }
-  }, [isAuthenticated, isBusinessOwner, navigate, currentUser]);
+  }, [isAuthenticated, isBusinessOwner, navigate, currentUser, isLoading, redirecting]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
