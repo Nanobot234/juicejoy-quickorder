@@ -38,7 +38,7 @@ export const createOrder = async (userId: string, items: CartItem[], orderDetail
     if (items.length > 0) {
       const orderItemsToInsert = items.map(item => ({
         order_id: order.id,
-        product_id: item.id,
+        product_id: String(item.id), // Convert id to string explicitly
         quantity: item.quantity,
         price_at_purchase: item.price,
         special_instructions: null
@@ -109,7 +109,7 @@ export const getUserOrders = async (userId: string): Promise<Order[]> => {
       
       // Convert the order items to the CartItem format
       const cartItems: CartItem[] = orderItems.map(item => ({
-        id: item.products.id,
+        id: item.products.id, // Now this works with both string and number types
         name: item.products.name,
         description: item.products.description || '',
         price: item.price_at_purchase,
