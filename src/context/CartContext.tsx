@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
 import { CartItem, Product } from "../types";
 import { toast } from "sonner";
@@ -36,12 +37,18 @@ const calculateTotal = (items: CartItem[]): number => {
   return items.reduce((total, item) => total + item.price * item.quantity, 0);
 };
 
+// Helper function to compare IDs that could be string or number
+const isSameId = (id1: string | number, id2: string | number): boolean => {
+  // Convert both to strings for comparison
+  return String(id1) === String(id2);
+};
+
 // Reducer function to handle cart state updates
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case "ADD_ITEM": {
       const existingItemIndex = state.items.findIndex(
-        (item) => item.id === action.payload.id
+        (item) => isSameId(item.id, action.payload.id)
       );
 
       if (existingItemIndex !== -1) {
@@ -72,7 +79,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
     case "REMOVE_ITEM": {
       const updatedItems = state.items.filter(
-        (item) => item.id !== action.payload
+        (item) => !isSameId(item.id, action.payload)
       );
       
       return {
@@ -87,7 +94,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
       if (quantity <= 0) {
         // If quantity is 0 or less, remove the item
-        const updatedItems = state.items.filter((item) => item.id !== id);
+        const updatedItems = state.items.filter((item) => !isSameId(item.id, id));
         return {
           ...state,
           items: updatedItems,
@@ -96,7 +103,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       }
 
       const updatedItems = state.items.map((item) =>
-        item.id === id ? { ...item, quantity } : item
+        isSameId(item.id, id) ? { ...item, quantity } : item
       );
 
       return {
