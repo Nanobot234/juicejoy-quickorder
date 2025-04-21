@@ -23,40 +23,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing session on load
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (data?.session) {
-          await fetchUserProfile(data.session);
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkSession();
-    
-    // Listen for authentication state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
-        if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          await fetchUserProfile(session);
-        } else if (event === 'SIGNED_OUT') {
-          setCurrentUser(null);
-        }
-      }
-    );
-    
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, []);
-  
   const fetchUserProfile = async (session: Session) => {
     try {
       console.log("Fetching profile for user:", session.user.id);
@@ -138,6 +104,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) {
+          fetchUserProfile(data.session);
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkSession();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
+        
+        if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          setTimeout(() => {
+            fetchUserProfile(session);
+          }, 0);
+        } else if (event === 'SIGNED_OUT') {
+          setCurrentUser(null);
+        }
+      }
+    );
+    
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
+
   const signupWithEmail = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -180,7 +181,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       if (data.user) {
-        // Update the profile to mark this user as a business owner
         const { error: profileError } = await supabase
           .from('profiles')
           .update({ role: 'business_owner' })
@@ -237,7 +237,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginAsBusinessOwner = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Using email/password auth for business accounts
       const { data, error } = await supabase.auth.signInWithPassword({
         email: username,
         password
@@ -248,7 +247,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
       
-      // Check if this user is a business owner
       if (data?.user) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -257,7 +255,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .single();
         
         if (profileError || profile?.role !== 'business_owner') {
-          // Not a business owner, sign out
           await supabase.auth.signOut();
           toast.error("This account does not have business owner privileges");
           return false;
