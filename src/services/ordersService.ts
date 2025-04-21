@@ -36,13 +36,22 @@ export const createOrder = async (userId: string, items: CartItem[], orderDetail
     
     // After successfully creating the order, create order items
     if (items.length > 0) {
-      const orderItemsToInsert = items.map(item => ({
-        order_id: order.id,
-        product_id: String(item.id), // Convert id to string explicitly
-        quantity: item.quantity,
-        price_at_purchase: item.price,
-        special_instructions: null
-      }));
+      // Check if we need to generate mock UUIDs for product IDs that are numbers
+      const orderItemsToInsert = items.map(item => {
+        // Convert numeric product IDs to UUIDs - this is a temporary solution
+        // Ideally, product IDs should be proper UUIDs from the beginning
+        const productId = typeof item.id === 'number' 
+          ? `00000000-0000-0000-0000-${item.id.toString().padStart(12, '0')}` 
+          : String(item.id);
+        
+        return {
+          order_id: order.id,
+          product_id: productId,
+          quantity: item.quantity,
+          price_at_purchase: item.price,
+          special_instructions: null
+        };
+      });
       
       const { error: itemsError } = await supabase
         .from('order_items')
