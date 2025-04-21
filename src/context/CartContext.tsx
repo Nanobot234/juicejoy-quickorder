@@ -12,8 +12,8 @@ interface CartState {
 // Define the possible actions for the cart
 type CartAction =
   | { type: "ADD_ITEM"; payload: Product }
-  | { type: "REMOVE_ITEM"; payload: number }
-  | { type: "UPDATE_QUANTITY"; payload: { id: number; quantity: number } }
+  | { type: "REMOVE_ITEM"; payload: string }
+  | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "CLEAR_CART" };
 
 // Initial cart state
@@ -27,8 +27,8 @@ const CartContext = createContext<{
   state: CartState;
   dispatch: React.Dispatch<CartAction>;
   addToCart: (product: Product) => void;
-  removeFromCart: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
+  removeFromCart: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
 } | undefined>(undefined);
 
@@ -37,10 +37,9 @@ const calculateTotal = (items: CartItem[]): number => {
   return items.reduce((total, item) => total + item.price * item.quantity, 0);
 };
 
-// Helper function to compare IDs that could be string or number
-const isSameId = (id1: string | number, id2: string | number): boolean => {
-  // Convert both to strings for comparison
-  return String(id1) === String(id2);
+// Helper function to compare IDs (now comparing strings)
+const isSameId = (id1: string, id2: string): boolean => {
+  return id1 === id2;
 };
 
 // Reducer function to handle cart state updates
@@ -133,12 +132,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     toast.success(`Added ${product.name} to cart!`);
   };
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => {
     dispatch({ type: "REMOVE_ITEM", payload: id });
     toast.info("Item removed from cart");
   };
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (id: string, quantity: number) => {
     dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity } });
   };
 
