@@ -32,7 +32,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           setTimeout(() => {
             fetchUserProfile(session, setCurrentUser, setIsLoading);
-          }, 0);
+          }, 1000); // Increased timeout to allow profile creation to complete
         } else if (event === 'SIGNED_OUT') {
           setCurrentUser(null);
         }
@@ -44,17 +44,17 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     };
   }, []);
 
-  const handleSignupWithEmail = (email: string, password: string) => 
-    signupWithEmail(email, password, setIsLoading);
+  const handleSignupWithEmail = async (email: string, password: string) => 
+    await signupWithEmail(email, password, setIsLoading);
 
-  const handleSignupAsBusinessOwner = (email: string, password: string) => 
-    signupAsBusinessOwner(email, password, setIsLoading);
+  const handleSignupAsBusinessOwner = async (email: string, password: string) => 
+    await signupAsBusinessOwner(email, password, setIsLoading);
 
-  const handleLoginWithEmail = (email: string, password: string) => 
-    loginWithEmail(email, password, setIsLoading);
+  const handleLoginWithEmail = async (email: string, password: string) => 
+    await loginWithEmail(email, password, setIsLoading);
 
-  const handleLoginAsBusinessOwner = (username: string, password: string) => 
-    loginAsBusinessOwner(username, password, setIsLoading);
+  const handleLoginAsBusinessOwner = async (username: string, password: string) => 
+    await loginAsBusinessOwner(username, password, setIsLoading);
 
   const handleLogout = () => logout(setCurrentUser);
 

@@ -115,16 +115,48 @@ export const signupAsBusinessOwner = async (
       return false;
     }
     if (data.user) {
-      const { error: profileError } = await supabase
+      // Check if profile exists first
+      const { data: profileData, error: fetchError } = await supabase
         .from('profiles')
-        .update({ role: 'business_owner' })
-        .eq('id', data.user.id);
-
-      if (profileError) {
-        console.error("Error updating profile as business owner:", profileError);
-        toast.error("Account created, but failed to set business owner status");
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+      
+      if (fetchError && fetchError.code !== 'PGRST116') { // Not found error code
+        console.error("Error fetching profile:", fetchError);
+        toast.error("Error setting business owner status");
         return false;
       }
+      
+      // If profile exists, update it
+      if (profileData) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ role: 'business_owner' })
+          .eq('id', data.user.id);
+        
+        if (updateError) {
+          console.error("Error updating profile as business owner:", updateError);
+          toast.error("Account created, but failed to set business owner status");
+          return false;
+        }
+      } else {
+        // If profile doesn't exist yet, insert it
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: email,
+            role: 'business_owner'
+          });
+        
+        if (insertError) {
+          console.error("Error creating business owner profile:", insertError);
+          toast.error("Account created, but failed to set business owner status");
+          return false;
+        }
+      }
+      
       toast.success("Business account created successfully!");
       return true;
     }
