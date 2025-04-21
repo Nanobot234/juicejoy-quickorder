@@ -22,7 +22,7 @@ export const createOrder = async (userId: string, items: CartItem[], orderDetail
       .from('orders')
       .insert({
         user_id: userId,
-        order_details: orderDetails,
+        order_details: orderDetails as any, // Type cast to avoid TypeScript error
         total_amount: total,
         status: "pending",
       })
