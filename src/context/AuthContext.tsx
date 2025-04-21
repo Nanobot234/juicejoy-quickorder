@@ -17,3 +17,4 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export { default as AuthProvider } from "./AuthProvider";
+export { useAuth } from "./useAuth";
