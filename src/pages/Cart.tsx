@@ -10,18 +10,14 @@ const Cart = () => {
   const { state, removeFromCart, updateQuantity } = useCart();
   const navigate = useNavigate();
 
-  const handleQuantityChange = (id: string | number, newQuantity: number) => {
+  const handleQuantityChange = (id: string, newQuantity: number) => {
     if (newQuantity > 0) {
-      // Convert string id to number if needed for compatibility with existing functions
-      const numericId = typeof id === 'string' ? parseInt(id) : id;
-      updateQuantity(numericId, newQuantity);
+      updateQuantity(id, newQuantity);
     }
   };
 
-  const handleRemoveItem = (id: string | number) => {
-    // Convert string id to number if needed for compatibility with existing functions
-    const numericId = typeof id === 'string' ? parseInt(id) : id;
-    removeFromCart(numericId);
+  const handleRemoveItem = (id: string) => {
+    removeFromCart(id);
   };
 
   const proceedToCheckout = () => {
