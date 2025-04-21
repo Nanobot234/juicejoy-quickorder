@@ -58,6 +58,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          order_details: Json | null
           payment_intent_id: string | null
           pickup_time: string | null
           shipping_address: string | null
@@ -69,6 +70,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          order_details?: Json | null
           payment_intent_id?: string | null
           pickup_time?: string | null
           shipping_address?: string | null
@@ -80,6 +82,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          order_details?: Json | null
           payment_intent_id?: string | null
           pickup_time?: string | null
           shipping_address?: string | null
