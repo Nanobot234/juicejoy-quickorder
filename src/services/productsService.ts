@@ -36,20 +36,17 @@ export async function createProduct(product: Omit<Product, "id">): Promise<boole
   const { name, description, price, image, category, ingredients, benefits } = product;
   const { error } = await supabase
     .from("products")
-    .insert([
-      {
-        name,
-        description,
-        price: price.toString(), // Convert price to string for Supabase
-        image_url: image,
-        category,
-        // Could be extended to save ingredients/benefits as JSON in db
-      }
-    ]);
+    .insert({
+      name,
+      description,
+      price, // Keep as number - don't convert to string
+      image_url: image,
+      category,
+      // Could be extended to save ingredients/benefits as JSON in db
+    });
   if (error) {
     console.error("Error creating product:", error);
     return false;
   }
   return true;
 }
-
