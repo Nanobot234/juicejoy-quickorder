@@ -47,12 +47,15 @@ export const fetchUserProfile = async (
         return;
       }
 
+      const isBusinessOwner = newProfile?.role === 'business_owner';
+      console.log("New profile created. Business owner status:", isBusinessOwner, newProfile?.role);
+
       const user: User = {
         id: session.user.id,
         phone: newProfile?.phone || '',
         name: newProfile?.name || '',
         email: session.user.email || '',
-        isBusinessOwner: newProfile?.role === 'business_owner' || false
+        isBusinessOwner: isBusinessOwner
       };
 
       setCurrentUser(user);
@@ -60,12 +63,15 @@ export const fetchUserProfile = async (
       return;
     }
 
+    const isBusinessOwner = data?.role === 'business_owner';
+    console.log("Profile found. Business owner status:", isBusinessOwner, data?.role);
+
     const user: User = {
       id: session.user.id,
       phone: data?.phone || '',
       name: data?.name || '',
       email: session.user.email || '',
-      isBusinessOwner: data?.role === 'business_owner' || false
+      isBusinessOwner: isBusinessOwner
     };
 
     setCurrentUser(user);

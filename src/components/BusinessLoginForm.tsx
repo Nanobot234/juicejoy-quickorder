@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -52,9 +51,13 @@ const BusinessLoginForm = () => {
 
   const handleLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setError(null);
+    console.log("Attempting business login for:", values.email);
     const success = await loginAsBusinessOwner(values.email, values.password);
     if (!success) {
+      console.log("Business login failed");
       setError("Invalid email or password");
+    } else {
+      console.log("Business login successful");
     }
   };
 

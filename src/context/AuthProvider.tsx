@@ -53,8 +53,12 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const handleLoginWithEmail = async (email: string, password: string) => 
     await loginWithEmail(email, password, setIsLoading);
 
-  const handleLoginAsBusinessOwner = async (username: string, password: string) => 
-    await loginAsBusinessOwner(username, password, setIsLoading);
+  const handleLoginAsBusinessOwner = async (username: string, password: string) => {
+    console.log("Login as business owner attempt for:", username);
+    const success = await loginAsBusinessOwner(username, password, setIsLoading);
+    console.log("Business login success:", success);
+    return success;
+  };
 
   const handleLogout = () => logout(setCurrentUser);
 
