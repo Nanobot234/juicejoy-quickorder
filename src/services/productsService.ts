@@ -21,7 +21,7 @@ export async function fetchProducts(): Promise<Product[]> {
     id: row.id,
     name: row.name,
     description: row.description ?? "",
-    price: parseFloat(row.price),
+    price: parseFloat(row.price.toString()), // Convert price to number
     image: row.image_url ?? "",
     category: row.category ?? "other",
     ingredients: [], // Could be extended in schema
@@ -40,7 +40,7 @@ export async function createProduct(product: Omit<Product, "id">): Promise<boole
       {
         name,
         description,
-        price,
+        price: price.toString(), // Convert price to string for Supabase
         image_url: image,
         category,
         // Could be extended to save ingredients/benefits as JSON in db
@@ -52,3 +52,4 @@ export async function createProduct(product: Omit<Product, "id">): Promise<boole
   }
   return true;
 }
+
