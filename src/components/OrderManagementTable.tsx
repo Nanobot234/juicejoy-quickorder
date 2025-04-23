@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger, 
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 export interface OrderManagementTableProps {
   orders: Order[];
@@ -44,6 +45,15 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
     } catch (error) {
       return dateString;
     }
+  };
+  
+  const handleStatusChange = (orderId: string, newStatus: Order["status"], currentStatus: Order["status"]) => {
+    if (newStatus === currentStatus) {
+      return;
+    }
+    
+    onStatusChange(orderId, newStatus);
+    toast.success(`Order #${orderId.slice(-5)} status updated to ${newStatus}`);
   };
   
   return (
@@ -104,7 +114,7 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
                         <DropdownMenuItem 
                           key={status}
                           className="capitalize"
-                          onClick={() => onStatusChange(order.id, status)}
+                          onClick={() => handleStatusChange(order.id, status, order.status)}
                           disabled={order.status === status}
                         >
                           <div className="flex items-center gap-2">

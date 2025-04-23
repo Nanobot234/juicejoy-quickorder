@@ -1,3 +1,4 @@
+
 import { CartItem, Order, OrderDetails } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -194,15 +195,98 @@ export const getAllOrders = async (): Promise<Order[]> => {
 
 export const updateOrderStatus = async (orderId: string, status: Order["status"]): Promise<Order | null> => {
   try {
+    // Update the order status without using .single()
     const { data, error } = await supabase
       .from('orders')
       .update({ status })
       .eq('id', orderId)
-      .select('*')
-      .single();
+      .select('*');
       
     if (error) {
       console.error("Error updating order status:", error);
+      return null;
+    }
+    
+    if (!data || data.length === 0) {
+      console.error(`No order found with id: ${orderId}`);
+      return null;
+    }
+    
+    const updatedOrder = data[0]; // Take the first result since we're expecting just one
+    
+    // Get the order items for this order
+    const { data: orderItems, error: itemsError } = await supabase
+      .from('order_items')
+      .select(`
+        quantity,
+        price_at_purchase,
+        special_instructions,
+        products (*)
+      `)
+      .eq('order_id', orderId);
+      
+    if (itemsError) {
+      console.error(`Error fetching items for order ${orderId}:`, itemsError);
+      return dbToOrderFormat(updatedOrder, []);
+    }
+    
+    // Convert the order items to the CartItem format
+    const cartItems: CartItem[] = (orderItems || []).map(item => ({
+      id: item.products.id,
+      name: item.products.name,
+      description: item.products.description || '',
+      price: item.price_at_purchase,
+      image: item.products.image_url || '',
+      category: item.products.category || '',
+      ingredients: [],  // These fields may not be in the database
+      benefits: [],     // These fields may not be in the database
+      quantity: item.quantity
+    }));
+    
+    return dbToOrderFormat(updatedOrder, cartItems);
+  } catch (error) {
+    console.error("Error in updateOrderStatus:", error);
+    return null;
+  }
+};
+
+// New function to subscribe to order status updates
+export const subscribeToOrderUpdates = (orderId: string, callback: (order: Order) => void) => {
+  const channel = supabase
+    .channel(`order-${orderId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `id=eq.${orderId}`
+      },
+      async (payload) => {
+        // When the order is updated, fetch the complete order and notify the callback
+        const updatedOrder = await getOrderById(payload.new.id);
+        if (updatedOrder) {
+          callback(updatedOrder);
+        }
+      }
+    )
+    .subscribe();
+
+  // Return the channel so it can be unsubscribed later
+  return channel;
+};
+
+// New function to get a single order by ID
+export const getOrderById = async (orderId: string): Promise<Order | null> => {
+  try {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle(); // Use maybeSingle instead of single to avoid errors
+      
+    if (error || !order) {
+      console.error(`Error fetching order ${orderId}:`, error);
       return null;
     }
     
@@ -219,25 +303,25 @@ export const updateOrderStatus = async (orderId: string, status: Order["status"]
       
     if (itemsError) {
       console.error(`Error fetching items for order ${orderId}:`, itemsError);
-      return dbToOrderFormat(data, []);
+      return dbToOrderFormat(order, []);
     }
     
     // Convert the order items to the CartItem format
-    const cartItems: CartItem[] = orderItems.map(item => ({
+    const cartItems: CartItem[] = (orderItems || []).map(item => ({
       id: item.products.id,
       name: item.products.name,
       description: item.products.description || '',
       price: item.price_at_purchase,
       image: item.products.image_url || '',
       category: item.products.category || '',
-      ingredients: [],  // These fields may not be in the database
-      benefits: [],     // These fields may not be in the database
+      ingredients: [],
+      benefits: [],
       quantity: item.quantity
     }));
     
-    return dbToOrderFormat(data, cartItems);
+    return dbToOrderFormat(order, cartItems);
   } catch (error) {
-    console.error("Error in updateOrderStatus:", error);
+    console.error("Error in getOrderById:", error);
     return null;
   }
 };
