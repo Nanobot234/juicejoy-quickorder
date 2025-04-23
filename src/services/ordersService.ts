@@ -1,4 +1,3 @@
-
 import { CartItem, Order, OrderDetails } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -250,7 +249,6 @@ export const updateOrderStatus = async (orderId: string, status: Order["status"]
   }
 };
 
-// New function to subscribe to order status updates
 export const subscribeToOrderUpdates = (orderId: string, callback: (order: Order) => void) => {
   const channel = supabase
     .channel(`order-${orderId}`)
@@ -276,7 +274,6 @@ export const subscribeToOrderUpdates = (orderId: string, callback: (order: Order
   return channel;
 };
 
-// New function to get a single order by ID
 export const getOrderById = async (orderId: string): Promise<Order | null> => {
   try {
     const { data: order, error } = await supabase
