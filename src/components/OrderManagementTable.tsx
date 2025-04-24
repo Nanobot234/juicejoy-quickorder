@@ -52,6 +52,7 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
       return;
     }
     
+    console.log(`Changing order ${orderId} status from ${currentStatus} to ${newStatus}`);
     onStatusChange(orderId, newStatus);
     toast.success(`Order #${orderId.slice(-5)} status updated to ${newStatus}`);
   };
@@ -81,7 +82,12 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
           ) : (
             orders.map((order) => (
               <TableRow key={order.id}>
-                <TableCell className="font-medium">#{order.id.slice(-5)}</TableCell>
+                <TableCell className="font-medium">
+                  #{order.id.slice(-5)}
+                  <span className="text-xs text-gray-500 block">
+                    Full ID: {order.id}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span>{order.orderDetails.name}</span>

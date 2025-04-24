@@ -194,7 +194,28 @@ export const getAllOrders = async (): Promise<Order[]> => {
 
 export const updateOrderStatus = async (orderId: string, status: Order["status"]): Promise<Order | null> => {
   try {
-    // Update the order status without using .single()
+    console.log(`Updating order status: Order ID ${orderId} to ${status}`);
+    
+    // First check if the order exists
+    const { data: existingOrder, error: findError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle();
+      
+    if (findError) {
+      console.error("Error finding order:", findError);
+      return null;
+    }
+    
+    if (!existingOrder) {
+      console.error(`No order found with id: ${orderId}`);
+      return null;
+    }
+    
+    console.log("Found existing order:", existingOrder);
+    
+    // Update the order status
     const { data, error } = await supabase
       .from('orders')
       .update({ status })
@@ -207,11 +228,12 @@ export const updateOrderStatus = async (orderId: string, status: Order["status"]
     }
     
     if (!data || data.length === 0) {
-      console.error(`No order found with id: ${orderId}`);
+      console.error(`Failed to retrieve updated order with id: ${orderId}`);
       return null;
     }
     
     const updatedOrder = data[0]; // Take the first result since we're expecting just one
+    console.log("Order updated successfully:", updatedOrder);
     
     // Get the order items for this order
     const { data: orderItems, error: itemsError } = await supabase
