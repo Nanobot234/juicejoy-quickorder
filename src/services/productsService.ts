@@ -50,3 +50,43 @@ export async function createProduct(product: Omit<Product, "id">): Promise<boole
   }
   return true;
 }
+
+/**
+ * Update an existing product
+ */
+export async function updateProduct(product: Product): Promise<boolean> {
+  const { id, name, description, price, image, category } = product;
+  const { error } = await supabase
+    .from("products")
+    .update({
+      name,
+      description,
+      price,
+      image_url: image,
+      category,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", id);
+  
+  if (error) {
+    console.error("Error updating product:", error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Delete a product by ID
+ */
+export async function deleteProduct(productId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", productId);
+  
+  if (error) {
+    console.error("Error deleting product:", error);
+    return false;
+  }
+  return true;
+}

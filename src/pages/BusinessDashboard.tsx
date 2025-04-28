@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -7,9 +8,10 @@ import { fetchProducts } from "@/services/productsService";
 import { Order, Product } from "@/types";
 import OrderManagementTable from "@/components/OrderManagementTable";
 import ProductForm from "@/components/business/ProductForm";
+import ProductsGrid from "@/components/business/ProductsGrid";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, PieChart, Users, ShoppingBag, DollarSign, List } from "lucide-react";
+import { Loader2, PieChart, Users, ShoppingBag, DollarSign, List, Archive } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -22,6 +24,7 @@ const BusinessDashboard = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
+  const [showCompletedOrders, setShowCompletedOrders] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -69,6 +72,9 @@ const BusinessDashboard = () => {
     updateStatusMutation.mutate({ orderId, status: newStatus });
   };
 
+  const activeOrders = orders?.filter(o => o.status !== "completed") || [];
+  const completedOrders = orders?.filter(o => o.status === "completed") || [];
+
   const pendingOrders = orders?.filter(o => o.status === "pending").length || 0;
   const totalOrders = orders?.length || 0;
   const totalRevenue = orders?.reduce((acc, o) => acc + o.total, 0) || 0;
@@ -79,7 +85,7 @@ const BusinessDashboard = () => {
     toast.success("Orders refreshed");
   };
 
-  const handleProductCreated = () => {
+  const handleProductsChanged = () => {
     fetchDbProducts();
   };
 
@@ -161,7 +167,11 @@ const BusinessDashboard = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-4 flex flex-wrap gap-2">
-            <TabsTrigger value="orders">Order Management</TabsTrigger>
+            <TabsTrigger value="orders">Active Orders</TabsTrigger>
+            <TabsTrigger value="completed">
+              <Archive className="inline w-4 h-4 mr-2" />
+              Completed Orders
+            </TabsTrigger>
             <TabsTrigger value="settings">Business Settings</TabsTrigger>
             <TabsTrigger value="products">
               <List className="inline w-4 h-4 mr-2" />
@@ -171,10 +181,22 @@ const BusinessDashboard = () => {
 
           <TabsContent value="orders">
             <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-2xl font-bold mb-4">Order Management</h2>
+              <h2 className="text-2xl font-bold mb-4">Active Order Management</h2>
               <OrderManagementTable 
-                orders={orders || []} 
+                orders={activeOrders} 
                 onStatusChange={handleStatusChange}
+                filterStatus="all"
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="completed">
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-2xl font-bold mb-4">Completed Order History</h2>
+              <OrderManagementTable 
+                orders={completedOrders} 
+                onStatusChange={handleStatusChange}
+                filterStatus="completed"
               />
             </div>
           </TabsContent>
@@ -195,7 +217,7 @@ const BusinessDashboard = () => {
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-2xl font-bold mb-4">Product Management</h2>
               <div className="mb-6">
-                <ProductForm onProductCreated={handleProductCreated} />
+                <ProductForm onProductCreated={handleProductsChanged} />
               </div>
               {loadingProducts ? (
                 <div className="py-4 text-center">
@@ -203,25 +225,7 @@ const BusinessDashboard = () => {
                   Loading products...
                 </div>
               ) : (
-                <div>
-                  {products.length === 0 ? (
-                    <div className="text-gray-500 py-8 text-center">No products created yet.</div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                      {products.map(product => (
-                        <div key={product.id}>
-                          <h4 className="font-semibold text-md mb-2">{product.name}</h4>
-                          <div className="mb-2">
-                            <img src={product.image} alt={product.name} className="w-full h-32 object-cover rounded" />
-                          </div>
-                          <div className="text-xs text-gray-600 mb-2">{product.category}</div>
-                          <div className="font-bold mb-2">${product.price?.toFixed(2)}</div>
-                          <div className="text-gray-700 text-sm mb-1">{product.description}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <ProductsGrid products={products} onProductsChanged={handleProductsChanged} />
               )}
             </div>
           </TabsContent>

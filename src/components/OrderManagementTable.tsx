@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 export interface OrderManagementTableProps {
   orders: Order[];
   onStatusChange: (orderId: string, status: Order["status"]) => void;
+  filterStatus?: Order["status"] | "all";
 }
 
 const statusColors = {
@@ -37,7 +38,7 @@ const statusIcons = {
 
 const statusOptions: Order["status"][] = ["pending", "preparing", "ready", "delivered", "completed"];
 
-const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onStatusChange }) => {
+const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onStatusChange, filterStatus = "all" }) => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -57,6 +58,11 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
     toast.success(`Order #${orderId.slice(-5)} status updated to ${newStatus}`);
   };
   
+  // Filter orders if a status filter is applied
+  const filteredOrders = filterStatus === "all" 
+    ? orders 
+    : orders.filter(order => order.status === filterStatus);
+  
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -73,14 +79,14 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <TableRow>
               <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                 No orders found
               </TableCell>
             </TableRow>
           ) : (
-            orders.map((order) => (
+            filteredOrders.map((order) => (
               <TableRow key={order.id}>
                 <TableCell className="font-medium">
                   #{order.id.slice(-5)}
