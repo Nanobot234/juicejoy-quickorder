@@ -1,30 +1,34 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
-import { getAllOrders, updateOrderStatus } from "@/services/ordersService";
-import { fetchProducts } from "@/services/productsService";
-import { Order, Product } from "@/types";
-import OrderManagementTable from "@/components/OrderManagementTable";
-import ProductForm from "@/components/business/ProductForm";
-import ProductsGrid from "@/components/business/ProductsGrid";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Loader2, PieChart, Users, ShoppingBag, DollarSign, List, Archive } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, List, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { toast } from "sonner";
+
+// Import custom hooks and components
+import { useBusinessDashboard } from "@/hooks/useBusinessDashboard";
+import DashboardCards from "@/components/business/dashboard/DashboardCards";
+import ActiveOrdersTab from "@/components/business/dashboard/ActiveOrdersTab";
+import CompletedOrdersTab from "@/components/business/dashboard/CompletedOrdersTab";
+import BusinessSettingsTab from "@/components/business/dashboard/BusinessSettingsTab";
+import ProductManagementTab from "@/components/business/dashboard/ProductManagementTab";
 
 const BusinessDashboard = () => {
   const { currentUser, isAuthenticated, isBusinessOwner } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<string>("orders");
-
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
-  const [showCompletedOrders, setShowCompletedOrders] = useState(false);
+  const { 
+    activeTab, 
+    setActiveTab, 
+    orders, 
+    loadingOrders, 
+    activeOrders, 
+    completedOrders, 
+    handleStatusChange, 
+    handleRefresh 
+  } = useBusinessDashboard();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -37,57 +41,6 @@ const BusinessDashboard = () => {
       return;
     }
   }, [isAuthenticated, isBusinessOwner, navigate]);
-
-  const { data: orders, isLoading: loadingOrders, refetch } = useQuery({
-    queryKey: ['allOrders'],
-    queryFn: getAllOrders,
-    refetchInterval: 30000 // Refresh every 30 seconds
-  });
-
-  const fetchDbProducts = async () => {
-    setLoadingProducts(true);
-    const data = await fetchProducts();
-    setProducts(data);
-    setLoadingProducts(false);
-  };
-
-  useEffect(() => {
-    if (isBusinessOwner) fetchDbProducts();
-  }, [isBusinessOwner]);
-
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ orderId, status }: { orderId: string; status: Order["status"] }) => {
-      return updateOrderStatus(orderId, status);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allOrders'] });
-      toast.success("Order status updated successfully.");
-    },
-    onError: () => {
-      toast.error("Failed to update order status.");
-    }
-  });
-
-  const handleStatusChange = (orderId: string, newStatus: Order["status"]) => {
-    updateStatusMutation.mutate({ orderId, status: newStatus });
-  };
-
-  const activeOrders = orders?.filter(o => o.status !== "completed") || [];
-  const completedOrders = orders?.filter(o => o.status === "completed") || [];
-
-  const pendingOrders = orders?.filter(o => o.status === "pending").length || 0;
-  const totalOrders = orders?.length || 0;
-  const totalRevenue = orders?.reduce((acc, o) => acc + o.total, 0) || 0;
-  const readyOrders = orders?.filter(o => o.status === "ready").length || 0;
-
-  const handleRefresh = () => {
-    refetch();
-    toast.success("Orders refreshed");
-  };
-
-  const handleProductsChanged = () => {
-    fetchDbProducts();
-  };
 
   if (loadingOrders) {
     return (
@@ -111,59 +64,7 @@ const BusinessDashboard = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-              <ShoppingBag className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{pendingOrders}</div>
-              <p className="text-xs text-muted-foreground">
-                Orders awaiting preparation
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ready for Pickup</CardTitle>
-              <PieChart className="h-4 w-4 text-purple-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{readyOrders}</div>
-              <p className="text-xs text-muted-foreground">
-                Orders ready for customers
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-              <Users className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalOrders}</div>
-              <p className="text-xs text-muted-foreground">
-                All-time order count
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">
-                All-time sales
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <DashboardCards orders={orders} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-4 flex flex-wrap gap-2">
@@ -180,54 +81,25 @@ const BusinessDashboard = () => {
           </TabsList>
 
           <TabsContent value="orders">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-2xl font-bold mb-4">Active Order Management</h2>
-              <OrderManagementTable 
-                orders={activeOrders} 
-                onStatusChange={handleStatusChange}
-                filterStatus="all"
-              />
-            </div>
+            <ActiveOrdersTab 
+              orders={activeOrders} 
+              onStatusChange={handleStatusChange} 
+            />
           </TabsContent>
 
           <TabsContent value="completed">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-2xl font-bold mb-4">Completed Order History</h2>
-              <OrderManagementTable 
-                orders={completedOrders} 
-                onStatusChange={handleStatusChange}
-                filterStatus="completed"
-              />
-            </div>
+            <CompletedOrdersTab 
+              orders={completedOrders} 
+              onStatusChange={handleStatusChange} 
+            />
           </TabsContent>
 
           <TabsContent value="settings">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-2xl font-bold mb-4">Business Settings</h2>
-              <p className="text-gray-600 mb-4">
-                Configure your store settings, hours, and preferences here.
-              </p>
-              <div className="space-y-4">
-                <p>Store settings will be available in a future update.</p>
-              </div>
-            </div>
+            <BusinessSettingsTab />
           </TabsContent>
 
           <TabsContent value="products">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-2xl font-bold mb-4">Product Management</h2>
-              <div className="mb-6">
-                <ProductForm onProductCreated={handleProductsChanged} />
-              </div>
-              {loadingProducts ? (
-                <div className="py-4 text-center">
-                  <Loader2 className="mx-auto animate-spin" />
-                  Loading products...
-                </div>
-              ) : (
-                <ProductsGrid products={products} onProductsChanged={handleProductsChanged} />
-              )}
-            </div>
+            <ProductManagementTab />
           </TabsContent>
         </Tabs>
       </div>
