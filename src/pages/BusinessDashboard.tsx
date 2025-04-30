@@ -3,54 +3,46 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
-import { getAllOrders, updateOrderStatus } from "@/services/ordersService";
-import { Order } from "@/types";
-import OrderManagementTable from "@/components/OrderManagementTable";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, List, Archive } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+
+// Import custom hooks and components
+import { useBusinessDashboard } from "@/hooks/useBusinessDashboard";
+import DashboardCards from "@/components/business/dashboard/DashboardCards";
+import ActiveOrdersTab from "@/components/business/dashboard/ActiveOrdersTab";
+import CompletedOrdersTab from "@/components/business/dashboard/CompletedOrdersTab";
+import BusinessSettingsTab from "@/components/business/dashboard/BusinessSettingsTab";
+import ProductManagementTab from "@/components/business/dashboard/ProductManagementTab";
 
 const BusinessDashboard = () => {
   const { currentUser, isAuthenticated, isBusinessOwner } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  
+  const { 
+    activeTab, 
+    setActiveTab, 
+    orders, 
+    loadingOrders, 
+    activeOrders, 
+    completedOrders, 
+    handleStatusChange, 
+    handleRefresh 
+  } = useBusinessDashboard();
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
-    
     if (!isBusinessOwner) {
       navigate("/");
       toast.error("You don't have permission to access this page.");
       return;
     }
   }, [isAuthenticated, isBusinessOwner, navigate]);
-  
-  const { data: orders, isLoading } = useQuery({
-    queryKey: ['allOrders'],
-    queryFn: getAllOrders
-  });
-  
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ orderId, status }: { orderId: string; status: Order["status"] }) => {
-      return updateOrderStatus(orderId, status);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allOrders'] });
-      toast.success("Order status updated successfully.");
-    },
-    onError: () => {
-      toast.error("Failed to update order status.");
-    }
-  });
-  
-  const handleStatusChange = (orderId: string, newStatus: Order["status"]) => {
-    updateStatusMutation.mutate({ orderId, status: newStatus });
-  };
 
-  if (isLoading) {
+  if (loadingOrders) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12">
@@ -65,14 +57,51 @@ const BusinessDashboard = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-8">Business Dashboard</h1>
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Order Management</h2>
-          <OrderManagementTable 
-            orders={orders || []} 
-            onStatusChange={handleStatusChange}
-          />
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Business Dashboard</h1>
+          <Button onClick={handleRefresh} variant="outline">
+            Refresh Data
+          </Button>
         </div>
+
+        <DashboardCards orders={orders} />
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-4 flex flex-wrap gap-2">
+            <TabsTrigger value="orders">Active Orders</TabsTrigger>
+            <TabsTrigger value="completed">
+              <Archive className="inline w-4 h-4 mr-2" />
+              Completed Orders
+            </TabsTrigger>
+            <TabsTrigger value="settings">Business Settings</TabsTrigger>
+            <TabsTrigger value="products">
+              <List className="inline w-4 h-4 mr-2" />
+              Product Management
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="orders">
+            <ActiveOrdersTab 
+              orders={activeOrders} 
+              onStatusChange={handleStatusChange} 
+            />
+          </TabsContent>
+
+          <TabsContent value="completed">
+            <CompletedOrdersTab 
+              orders={completedOrders} 
+              onStatusChange={handleStatusChange} 
+            />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <BusinessSettingsTab />
+          </TabsContent>
+
+          <TabsContent value="products">
+            <ProductManagementTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

@@ -1,10 +1,13 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Order } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { subscribeToOrderUpdates } from "@/services/ordersService";
+import { toast } from "sonner";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 interface OrderCardProps {
   order: Order;
@@ -18,7 +21,39 @@ const statusColors = {
   completed: "bg-gray-500"
 };
 
-const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
+const statusMessages = {
+  pending: "Your order has been received",
+  preparing: "Your order is being prepared",
+  ready: "Your order is ready for pickup/delivery",
+  delivered: "Your order has been delivered",
+  completed: "Your order is complete"
+};
+
+const OrderCard: React.FC<OrderCardProps> = ({ order: initialOrder }) => {
+  const [order, setOrder] = useState<Order>(initialOrder);
+  const [previousStatus, setPreviousStatus] = useState<Order["status"]>(initialOrder.status);
+
+  useEffect(() => {
+    let channel: RealtimeChannel | null = null;
+    
+    // Subscribe to real-time updates for this order
+    channel = subscribeToOrderUpdates(initialOrder.id, (updatedOrder) => {
+      if (updatedOrder.status !== previousStatus) {
+        // Show a toast notification when the status changes
+        toast.info(`Order #${updatedOrder.id.slice(-5)} status updated: ${updatedOrder.status}`);
+        setPreviousStatus(updatedOrder.status);
+      }
+      setOrder(updatedOrder);
+    });
+    
+    // Cleanup function to unsubscribe from updates when component unmounts
+    return () => {
+      if (channel) {
+        channel.unsubscribe();
+      }
+    };
+  }, [initialOrder.id, previousStatus]);
+
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -49,6 +84,10 @@ const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
       </CardHeader>
       
       <CardContent className="pb-2">
+        <div className="mb-4">
+          <p className="text-sm text-gray-600">{statusMessages[order.status]}</p>
+        </div>
+        
         <ul className="space-y-2">
           {order.items.map((item, index) => (
             <li key={`${order.id}-item-${index}`} className="flex justify-between">

@@ -10,13 +10,13 @@ const Cart = () => {
   const { state, removeFromCart, updateQuantity } = useCart();
   const navigate = useNavigate();
 
-  const handleQuantityChange = (id: number, newQuantity: number) => {
+  const handleQuantityChange = (id: string, newQuantity: number) => {
     if (newQuantity > 0) {
       updateQuantity(id, newQuantity);
     }
   };
 
-  const handleRemoveItem = (id: number) => {
+  const handleRemoveItem = (id: string) => {
     removeFromCart(id);
   };
 

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger, 
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 export interface OrderManagementTableProps {
   orders: Order[];
   onStatusChange: (orderId: string, status: Order["status"]) => void;
+  filterStatus?: Order["status"] | "all";
 }
 
 const statusColors = {
@@ -36,7 +38,7 @@ const statusIcons = {
 
 const statusOptions: Order["status"][] = ["pending", "preparing", "ready", "delivered", "completed"];
 
-const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onStatusChange }) => {
+const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onStatusChange, filterStatus = "all" }) => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -45,6 +47,21 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
       return dateString;
     }
   };
+  
+  const handleStatusChange = (orderId: string, newStatus: Order["status"], currentStatus: Order["status"]) => {
+    if (newStatus === currentStatus) {
+      return;
+    }
+    
+    console.log(`Changing order ${orderId} status from ${currentStatus} to ${newStatus}`);
+    onStatusChange(orderId, newStatus);
+    toast.success(`Order #${orderId.slice(-5)} status updated to ${newStatus}`);
+  };
+  
+  // Filter orders if a status filter is applied
+  const filteredOrders = filterStatus === "all" 
+    ? orders 
+    : orders.filter(order => order.status === filterStatus);
   
   return (
     <div className="overflow-x-auto">
@@ -62,16 +79,21 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <TableRow>
               <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                 No orders found
               </TableCell>
             </TableRow>
           ) : (
-            orders.map((order) => (
+            filteredOrders.map((order) => (
               <TableRow key={order.id}>
-                <TableCell className="font-medium">#{order.id.slice(-5)}</TableCell>
+                <TableCell className="font-medium">
+                  #{order.id.slice(-5)}
+                  <span className="text-xs text-gray-500 block">
+                    Full ID: {order.id}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span>{order.orderDetails.name}</span>
@@ -104,7 +126,7 @@ const OrderManagementTable: React.FC<OrderManagementTableProps> = ({ orders, onS
                         <DropdownMenuItem 
                           key={status}
                           className="capitalize"
-                          onClick={() => onStatusChange(order.id, status)}
+                          onClick={() => handleStatusChange(order.id, status, order.status)}
                           disabled={order.status === status}
                         >
                           <div className="flex items-center gap-2">

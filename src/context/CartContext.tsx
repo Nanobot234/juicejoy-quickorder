@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
 import { CartItem, Product } from "../types";
 import { toast } from "sonner";
@@ -11,8 +12,8 @@ interface CartState {
 // Define the possible actions for the cart
 type CartAction =
   | { type: "ADD_ITEM"; payload: Product }
-  | { type: "REMOVE_ITEM"; payload: number }
-  | { type: "UPDATE_QUANTITY"; payload: { id: number; quantity: number } }
+  | { type: "REMOVE_ITEM"; payload: string }
+  | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "CLEAR_CART" };
 
 // Initial cart state
@@ -26,8 +27,8 @@ const CartContext = createContext<{
   state: CartState;
   dispatch: React.Dispatch<CartAction>;
   addToCart: (product: Product) => void;
-  removeFromCart: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
+  removeFromCart: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
 } | undefined>(undefined);
 
@@ -36,12 +37,17 @@ const calculateTotal = (items: CartItem[]): number => {
   return items.reduce((total, item) => total + item.price * item.quantity, 0);
 };
 
+// Helper function to compare IDs (now comparing strings)
+const isSameId = (id1: string, id2: string): boolean => {
+  return id1 === id2;
+};
+
 // Reducer function to handle cart state updates
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case "ADD_ITEM": {
       const existingItemIndex = state.items.findIndex(
-        (item) => item.id === action.payload.id
+        (item) => isSameId(item.id, action.payload.id)
       );
 
       if (existingItemIndex !== -1) {
@@ -72,7 +78,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
     case "REMOVE_ITEM": {
       const updatedItems = state.items.filter(
-        (item) => item.id !== action.payload
+        (item) => !isSameId(item.id, action.payload)
       );
       
       return {
@@ -87,7 +93,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
       if (quantity <= 0) {
         // If quantity is 0 or less, remove the item
-        const updatedItems = state.items.filter((item) => item.id !== id);
+        const updatedItems = state.items.filter((item) => !isSameId(item.id, id));
         return {
           ...state,
           items: updatedItems,
@@ -96,7 +102,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       }
 
       const updatedItems = state.items.map((item) =>
-        item.id === id ? { ...item, quantity } : item
+        isSameId(item.id, id) ? { ...item, quantity } : item
       );
 
       return {
@@ -126,12 +132,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     toast.success(`Added ${product.name} to cart!`);
   };
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => {
     dispatch({ type: "REMOVE_ITEM", payload: id });
     toast.info("Item removed from cart");
   };
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (id: string, quantity: number) => {
     dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity } });
   };
 

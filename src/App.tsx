@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,11 +14,11 @@ import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import Login from "./pages/Login";
 import MyOrders from "./pages/MyOrders";
+import CustomerDashboard from "./pages/CustomerDashboard";
 import BusinessDashboard from "./pages/BusinessDashboard";
 import NotFound from "./pages/NotFound";
 import { TooltipProvider } from "./components/ui/tooltip";
-import React from "react";
-// Create a new QueryClient instance
+
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -39,6 +40,7 @@ const App = () => {
                   <Route path="/order-confirmation" element={<OrderConfirmation />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/my-orders" element={<MyOrders />} />
+                  <Route path="/customer-dashboard" element={<CustomerDashboard />} />
                   <Route path="/business-dashboard" element={<BusinessDashboard />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

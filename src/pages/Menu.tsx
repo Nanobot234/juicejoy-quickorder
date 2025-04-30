@@ -1,23 +1,44 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
-import { products } from "@/data/products";
+import { products as localProducts } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { fetchProducts } from "@/services/productsService";
 
 const Menu = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [dbProducts, setDbProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch products from Supabase
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    fetchProducts().then((fetched) => {
+      if (mounted) {
+        setDbProducts(fetched);
+        setLoading(false);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Merge DB products and hardcoded only if db is empty (fallback to old)
+  const allProducts = (dbProducts.length > 0 ? dbProducts : localProducts);
 
   // Get unique categories
-  const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
+  const categories = ["all", ...Array.from(new Set(allProducts.map(p => p.category)))];
 
   // Filter products based on search term
-  const filteredProducts = products.filter((product) =>
+  const filteredProducts = allProducts.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.ingredients.some(i => i.toLowerCase().includes(searchTerm.toLowerCase()))
+    product.ingredients.some((i: string) => i.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +61,6 @@ const Menu = () => {
           <p className="text-white/90 max-w-2xl mx-auto mb-8">
             Explore our selection of freshly pressed juices, packed with nutrients and bursting with flavor.
           </p>
-
           <div className="relative max-w-md mx-auto">
             <Input
               type="text"
@@ -56,6 +76,9 @@ const Menu = () => {
 
       {/* Menu Section */}
       <section className="container mx-auto px-4 py-12">
+        {loading ? (
+          <div className="text-center py-12">Loading products...</div>
+        ) : (
         <Tabs defaultValue="all" className="w-full">
           <div className="flex justify-center mb-8">
             <TabsList className="h-auto p-1">
@@ -88,6 +111,7 @@ const Menu = () => {
             </TabsContent>
           ))}
         </Tabs>
+        )}
       </section>
 
       {/* Benefits Section */}

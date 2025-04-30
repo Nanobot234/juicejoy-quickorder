@@ -11,22 +11,26 @@ import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isBusinessOwner, currentUser } = useAuth();
+  const { isAuthenticated, isBusinessOwner, currentUser, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("customer");
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    // Check if user is authenticated and redirect accordingly
-    if (isAuthenticated) {
+    console.log("Login page: auth state", { isAuthenticated, isBusinessOwner, currentUser, isLoading });
+    
+    if (isAuthenticated && !redirecting && !isLoading) {
+      setRedirecting(true);
       if (isBusinessOwner) {
         console.log("Redirecting business owner to dashboard");
+        toast.success("Welcome to your business dashboard!");
         navigate("/business-dashboard");
       } else {
-        console.log("Redirecting customer to my orders", currentUser);
-        toast.success("Welcome back! Your orders are ready.");
-        navigate("/my-orders");
+        console.log("Redirecting customer to dashboard", currentUser);
+        toast.success("Welcome back!");
+        navigate("/customer-dashboard");
       }
     }
-  }, [isAuthenticated, isBusinessOwner, navigate, currentUser]);
+  }, [isAuthenticated, isBusinessOwner, navigate, currentUser, isLoading, redirecting]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
