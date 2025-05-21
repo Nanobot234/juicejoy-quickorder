@@ -24,11 +24,11 @@ const initialCartState: CartState = {
 
 // Create context
 const CartContext = createContext<{
-  state: CartState;
-  dispatch: React.Dispatch<CartAction>;
+  cartItems: CartItem[];
+  total: number;
   addToCart: (product: Product) => void;
   removeFromCart: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  updateCartItemQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
 } | undefined>(undefined);
 
@@ -137,7 +137,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     toast.info("Item removed from cart");
   };
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateCartItemQuantity = (id: string, quantity: number) => {
     dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity } });
   };
 
@@ -146,11 +146,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const value = {
-    state,
-    dispatch,
+    cartItems: state.items,
+    total: state.total,
     addToCart,
     removeFromCart,
-    updateQuantity,
+    updateCartItemQuantity,
     clearCart,
   };
 

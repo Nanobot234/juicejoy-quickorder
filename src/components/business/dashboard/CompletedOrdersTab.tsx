@@ -6,9 +6,11 @@ import { Order } from "@/types";
 interface CompletedOrdersTabProps {
   orders: Order[];
   onStatusChange: (orderId: string, status: Order["status"]) => void;
+  handleRefresh: () => void;
+  isLoading: boolean;
 }
 
-const CompletedOrdersTab: React.FC<CompletedOrdersTabProps> = ({ orders, onStatusChange }) => {
+const CompletedOrdersTab: React.FC<CompletedOrdersTabProps> = ({ orders, onStatusChange, handleRefresh, isLoading }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4">Completed Order History</h2>

@@ -24,6 +24,7 @@ const BusinessDashboard = () => {
     handleStatusChange,
     handleRefresh,
     loadingOrders,
+    orders
   } = useBusinessDashboard();
 
   // Redirect if not authenticated or not a business owner
@@ -41,10 +42,7 @@ const BusinessDashboard = () => {
         <h1 className="text-3xl font-bold mb-6">Business Dashboard</h1>
 
         {/* Dashboard Summary Cards */}
-        <DashboardCards 
-          activeOrders={activeOrders} 
-          completedOrders={completedOrders} 
-        />
+        <DashboardCards orders={orders} />
 
         {/* Dashboard Tabs */}
         <div className="mt-8">
@@ -66,7 +64,7 @@ const BusinessDashboard = () => {
             {/* Tab Content */}
             <TabsContent value="orders" className="p-0">
               <ActiveOrdersTab
-                activeOrders={activeOrders}
+                orders={activeOrders}
                 handleStatusChange={handleStatusChange}
                 handleRefresh={handleRefresh}
                 isLoading={loadingOrders}
@@ -75,7 +73,8 @@ const BusinessDashboard = () => {
             
             <TabsContent value="history" className="p-0">
               <CompletedOrdersTab 
-                completedOrders={completedOrders}
+                orders={completedOrders}
+                onStatusChange={handleStatusChange}
                 handleRefresh={handleRefresh}
                 isLoading={loadingOrders}
               />

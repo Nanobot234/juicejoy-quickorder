@@ -3,13 +3,12 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/context/CartContext";
 
-interface OrdersHeaderProps {
-  cartItemCount: number;
-}
-
-const OrdersHeader: React.FC<OrdersHeaderProps> = ({ cartItemCount }) => {
+const OrdersHeader: React.FC = () => {
   const navigate = useNavigate();
+  const { cartItems } = useCart();
+  const cartItemCount = cartItems.length;
   
   return (
     <div className="flex justify-between items-center mb-8">

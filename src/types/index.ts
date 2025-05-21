@@ -52,14 +52,18 @@ export interface SubscriptionPlan {
   price: number;
   frequency: "weekly" | "bi-weekly" | "monthly";
   is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface SubscriptionItem {
   id: string;
   subscription_id: string;
   product_id: string;
-  product?: Product;
+  product?: Partial<Product>;
   quantity: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface UserSubscription {
@@ -72,4 +76,6 @@ export interface UserSubscription {
   next_delivery_date: string;
   shipping_address: string;
   items?: SubscriptionItem[];
+  created_at?: string;
+  updated_at?: string;
 }

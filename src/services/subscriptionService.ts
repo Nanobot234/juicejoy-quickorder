@@ -12,7 +12,12 @@ export const getSubscriptionPlans = async (): Promise<SubscriptionPlan[]> => {
       .order("price");
 
     if (error) throw error;
-    return data || [];
+    
+    // Cast the data to ensure it matches our defined types
+    return (data || []).map(plan => ({
+      ...plan,
+      frequency: plan.frequency as "weekly" | "bi-weekly" | "monthly"
+    }));
   } catch (error) {
     console.error("Error fetching subscription plans:", error);
     toast.error("Failed to load subscription plans");
@@ -33,7 +38,16 @@ export const getUserSubscriptions = async (userId: string): Promise<UserSubscrip
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    // Cast the data to ensure it matches our defined types
+    return (data || []).map(subscription => ({
+      ...subscription,
+      status: subscription.status as "active" | "paused" | "cancelled",
+      plan: subscription.plan ? {
+        ...subscription.plan,
+        frequency: subscription.plan.frequency as "weekly" | "bi-weekly" | "monthly"
+      } : undefined
+    }));
   } catch (error) {
     console.error("Error fetching user subscriptions:", error);
     toast.error("Failed to load your subscriptions");
@@ -53,7 +67,17 @@ export const getSubscriptionItems = async (subscriptionId: string): Promise<Subs
       .eq("subscription_id", subscriptionId);
 
     if (error) throw error;
-    return data || [];
+    
+    // Map and adapt the product data structure
+    return (data || []).map(item => ({
+      ...item,
+      product: item.product ? {
+        ...item.product,
+        image: item.product.image_url || "",
+        ingredients: [], // Default empty arrays as these aren't in the DB
+        benefits: []     // Default empty arrays as these aren't in the DB
+      } : undefined
+    }));
   } catch (error) {
     console.error("Error fetching subscription items:", error);
     toast.error("Failed to load subscription items");
@@ -99,7 +123,11 @@ export const createSubscription = async (
       if (itemsError) throw itemsError;
       
       toast.success("Subscription created successfully!");
-      return subscription;
+      // Cast to ensure type compatibility
+      return {
+        ...subscription,
+        status: subscription.status as "active" | "paused" | "cancelled"
+      };
     }
     
     return null;
@@ -175,7 +203,16 @@ export const getAllActiveSubscriptions = async (): Promise<UserSubscription[]> =
       .order("next_delivery_date", { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    
+    // Cast the data to ensure it matches our defined types
+    return (data || []).map(subscription => ({
+      ...subscription,
+      status: subscription.status as "active" | "paused" | "cancelled",
+      plan: subscription.plan ? {
+        ...subscription.plan,
+        frequency: subscription.plan.frequency as "weekly" | "bi-weekly" | "monthly"
+      } : undefined
+    }));
   } catch (error) {
     console.error("Error fetching active subscriptions:", error);
     toast.error("Failed to load active subscriptions");
