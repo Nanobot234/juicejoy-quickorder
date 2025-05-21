@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
@@ -16,7 +15,7 @@ import {
 import { toast } from "sonner";
 
 const Cart = () => {
-  const { cartItems, updateCartItemQuantity, removeFromCart, clearCart } = useCart();
+  const { cartItems, total, updateCartItemQuantity, removeFromCart, clearCart } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,11 +25,8 @@ const Cart = () => {
   // Check if cart is empty
   const isCartEmpty = cartItems.length === 0;
   
-  // Calculate cart total
-  const cartTotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  // Use the total directly from context
+  const cartTotal = total;
 
   // Handle checkout button click
   const handleCheckout = () => {

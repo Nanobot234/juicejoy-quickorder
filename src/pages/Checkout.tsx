@@ -36,14 +36,14 @@ const formSchema = z.object({
 });
 
 const Checkout = () => {
-  const { state, clearCart } = useCart();
+  const { cartItems, total, clearCart } = useCart();
   const { currentUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Redirect if cart is empty or user not authenticated
   React.useEffect(() => {
-    if (state.items.length === 0) {
+    if (cartItems.length === 0) {
       navigate("/menu");
       return;
     }
@@ -52,7 +52,7 @@ const Checkout = () => {
       toast.error("Please login to complete your order");
       navigate("/login");
     }
-  }, [state.items.length, navigate, isAuthenticated]);
+  }, [cartItems.length, navigate, isAuthenticated]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -91,8 +91,8 @@ const Checkout = () => {
       
       // Store order details and cart in session storage for confirmation page
       sessionStorage.setItem("orderDetails", JSON.stringify(orderDetails));
-      sessionStorage.setItem("orderItems", JSON.stringify(state.items));
-      sessionStorage.setItem("orderTotal", state.total.toString());
+      sessionStorage.setItem("orderItems", JSON.stringify(cartItems));
+      sessionStorage.setItem("orderTotal", total.toString());
       
       // Navigate to confirmation page
       navigate("/order-confirmation");
@@ -104,10 +104,10 @@ const Checkout = () => {
     }
   };
 
-  const subtotal = state.total;
+  const subtotal = total;
   const tax = subtotal * 0.08;
   const deliveryFee = deliveryMethod === "delivery" ? 3.99 : 0;
-  const total = subtotal + tax + deliveryFee;
+  const totalWithFees = subtotal + tax + deliveryFee;
 
   return (
     <Layout>

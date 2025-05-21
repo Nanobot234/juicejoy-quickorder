@@ -22,7 +22,7 @@ const initialCartState: CartState = {
   total: 0,
 };
 
-// Create context
+// Create context with proper types that match what we expose
 const CartContext = createContext<{
   cartItems: CartItem[];
   total: number;
@@ -145,6 +145,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     dispatch({ type: "CLEAR_CART" });
   };
 
+  // Expose the state and functions with names that match our context type
   const value = {
     cartItems: state.items,
     total: state.total,

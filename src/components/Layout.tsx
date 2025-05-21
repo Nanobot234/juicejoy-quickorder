@@ -1,4 +1,3 @@
-
 import React from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { ShoppingCart, Menu as MenuIcon, X, LogIn, User, LogOut } from "lucide-react";
@@ -19,14 +18,14 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { state } = useCart();
+  const { cartItems, total } = useCart();
   const { currentUser, setCurrentUser, isAuthenticated, isBusinessOwner, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
-  const totalItems = state.items.reduce((total, item) => total + item.quantity, 0);
+  const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   const navItems = [
     { path: "/", label: "Home" },
