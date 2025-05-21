@@ -43,3 +43,33 @@ export interface Order {
   status: "pending" | "preparing" | "ready" | "delivered" | "completed";
   createdAt: string;
 }
+
+// Subscription Types
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  frequency: "weekly" | "bi-weekly" | "monthly";
+  is_active: boolean;
+}
+
+export interface SubscriptionItem {
+  id: string;
+  subscription_id: string;
+  product_id: string;
+  product?: Product;
+  quantity: number;
+}
+
+export interface UserSubscription {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  plan?: SubscriptionPlan;
+  status: "active" | "paused" | "cancelled";
+  started_at: string;
+  next_delivery_date: string;
+  shipping_address: string;
+  items?: SubscriptionItem[];
+}

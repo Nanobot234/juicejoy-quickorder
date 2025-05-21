@@ -170,6 +170,132 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          subscription_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity?: number
+          subscription_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          subscription_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_items_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          frequency: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          frequency: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          next_delivery_date: string
+          plan_id: string
+          shipping_address: string
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          next_delivery_date: string
+          plan_id: string
+          shipping_address: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          next_delivery_date?: string
+          plan_id?: string
+          shipping_address?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

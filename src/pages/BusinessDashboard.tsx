@@ -1,107 +1,99 @@
 
-import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
-import { Loader2, List, Archive } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { toast } from "sonner";
-
-// Import custom hooks and components
+import { Navigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBusinessDashboard } from "@/hooks/useBusinessDashboard";
+
+// Dashboard components
 import DashboardCards from "@/components/business/dashboard/DashboardCards";
 import ActiveOrdersTab from "@/components/business/dashboard/ActiveOrdersTab";
 import CompletedOrdersTab from "@/components/business/dashboard/CompletedOrdersTab";
-import BusinessSettingsTab from "@/components/business/dashboard/BusinessSettingsTab";
 import ProductManagementTab from "@/components/business/dashboard/ProductManagementTab";
+import BusinessSettingsTab from "@/components/business/dashboard/BusinessSettingsTab";
+import SubscriptionsTab from "@/components/business/dashboard/SubscriptionsTab";
 
 const BusinessDashboard = () => {
-  const { currentUser, isAuthenticated, isBusinessOwner } = useAuth();
-  const navigate = useNavigate();
-  const { 
-    activeTab, 
-    setActiveTab, 
-    orders, 
-    loadingOrders, 
-    activeOrders, 
-    completedOrders, 
-    handleStatusChange, 
-    handleRefresh 
+  const { isAuthenticated, isBusinessOwner } = useAuth();
+  const {
+    activeTab,
+    setActiveTab,
+    activeOrders,
+    completedOrders,
+    handleStatusChange,
+    handleRefresh,
+    loadingOrders,
   } = useBusinessDashboard();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-    if (!isBusinessOwner) {
-      navigate("/");
-      toast.error("You don't have permission to access this page.");
-      return;
-    }
-  }, [isAuthenticated, isBusinessOwner, navigate]);
+  // Redirect if not authenticated or not a business owner
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
 
-  if (loadingOrders) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-12">
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-juicy-green" />
-          </div>
-        </div>
-      </Layout>
-    );
+  if (!isBusinessOwner) {
+    return <Navigate to="/" />;
   }
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Business Dashboard</h1>
-          <Button onClick={handleRefresh} variant="outline">
-            Refresh Data
-          </Button>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Business Dashboard</h1>
+
+        {/* Dashboard Summary Cards */}
+        <DashboardCards 
+          activeOrders={activeOrders} 
+          completedOrders={completedOrders} 
+        />
+
+        {/* Dashboard Tabs */}
+        <div className="mt-8">
+          <Tabs 
+            value={activeTab} 
+            onValueChange={setActiveTab}
+            className="bg-white rounded-xl shadow-md mb-6"
+          >
+            <div className="px-6 pt-6">
+              <TabsList className="w-full">
+                <TabsTrigger value="orders" className="flex-1">Active Orders</TabsTrigger>
+                <TabsTrigger value="history" className="flex-1">Order History</TabsTrigger>
+                <TabsTrigger value="products" className="flex-1">Products</TabsTrigger>
+                <TabsTrigger value="subscriptions" className="flex-1">Subscriptions</TabsTrigger>
+                <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Tab Content */}
+            <TabsContent value="orders" className="p-0">
+              <ActiveOrdersTab
+                activeOrders={activeOrders}
+                handleStatusChange={handleStatusChange}
+                handleRefresh={handleRefresh}
+                isLoading={loadingOrders}
+              />
+            </TabsContent>
+            
+            <TabsContent value="history" className="p-0">
+              <CompletedOrdersTab 
+                completedOrders={completedOrders}
+                handleRefresh={handleRefresh}
+                isLoading={loadingOrders}
+              />
+            </TabsContent>
+            
+            <TabsContent value="products" className="p-0">
+              <ProductManagementTab />
+            </TabsContent>
+            
+            <TabsContent value="subscriptions" className="p-0">
+              <SubscriptionsTab />
+            </TabsContent>
+            
+            <TabsContent value="settings" className="p-0">
+              <BusinessSettingsTab />
+            </TabsContent>
+          </Tabs>
         </div>
-
-        <DashboardCards orders={orders} />
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-4 flex flex-wrap gap-2">
-            <TabsTrigger value="orders">Active Orders</TabsTrigger>
-            <TabsTrigger value="completed">
-              <Archive className="inline w-4 h-4 mr-2" />
-              Completed Orders
-            </TabsTrigger>
-            <TabsTrigger value="settings">Business Settings</TabsTrigger>
-            <TabsTrigger value="products">
-              <List className="inline w-4 h-4 mr-2" />
-              Product Management
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="orders">
-            <ActiveOrdersTab 
-              orders={activeOrders} 
-              onStatusChange={handleStatusChange} 
-            />
-          </TabsContent>
-
-          <TabsContent value="completed">
-            <CompletedOrdersTab 
-              orders={completedOrders} 
-              onStatusChange={handleStatusChange} 
-            />
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <BusinessSettingsTab />
-          </TabsContent>
-
-          <TabsContent value="products">
-            <ProductManagementTab />
-          </TabsContent>
-        </Tabs>
       </div>
     </Layout>
   );
