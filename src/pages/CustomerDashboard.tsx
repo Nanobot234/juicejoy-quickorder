@@ -9,11 +9,19 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { UserCircle } from "lucide-react";
 import SubscriptionsSection from "@/components/subscription/SubscriptionsSection";
+import { useQuery } from "@tanstack/react-query";
+import { getUserOrders } from "@/services/ordersService";
 
 const CustomerDashboard = () => {
   const { currentUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("orders");
   const navigate = useNavigate();
+
+  const { data: orders = [] } = useQuery({
+    queryKey: ['userOrders', currentUser?.id],
+    queryFn: () => currentUser?.id ? getUserOrders(currentUser.id) : [],
+    enabled: !!currentUser?.id,
+  });
 
   const handleLogout = async () => {
     await logout();
@@ -52,7 +60,7 @@ const CustomerDashboard = () => {
           <TabsContent value="orders" className="p-0">
             <div className="p-6">
               <OrdersHeader />
-              <OrdersList />
+              <OrdersList orders={orders} />
             </div>
           </TabsContent>
 

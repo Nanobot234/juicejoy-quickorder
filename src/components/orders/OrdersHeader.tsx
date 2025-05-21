@@ -5,14 +5,18 @@ import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 
-const OrdersHeader: React.FC = () => {
+interface OrdersHeaderProps {
+  title?: string;
+}
+
+const OrdersHeader: React.FC<OrdersHeaderProps> = ({ title = "My Orders" }) => {
   const navigate = useNavigate();
   const { cartItems } = useCart();
   const cartItemCount = cartItems.length;
   
   return (
     <div className="flex justify-between items-center mb-8">
-      <h1 className="text-3xl font-bold">My Orders</h1>
+      <h1 className="text-3xl font-bold">{title}</h1>
       
       <div className="flex space-x-3">
         {cartItemCount > 0 && (

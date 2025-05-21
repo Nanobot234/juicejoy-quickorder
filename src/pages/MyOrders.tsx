@@ -14,7 +14,7 @@ import OrdersError from "@/components/orders/OrdersError";
 const MyOrders = () => {
   const { currentUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { state: cartState } = useCart();
+  const { cartItems } = useCart();
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -45,13 +45,13 @@ const MyOrders = () => {
     }
   }, [isAuthenticated, currentUser?.id, refetch]);
 
-  const cartItemCount = cartState.items.length;
+  const cartItemCount = cartItems.length;
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          <OrdersHeader cartItemCount={cartItemCount} />
+          <OrdersHeader />
           
           {isLoading ? (
             <OrdersLoading />

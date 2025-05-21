@@ -65,7 +65,7 @@ const BusinessDashboard = () => {
             <TabsContent value="orders" className="p-0">
               <ActiveOrdersTab
                 orders={activeOrders}
-                handleStatusChange={handleStatusChange}
+                onStatusChange={handleStatusChange}
                 handleRefresh={handleRefresh}
                 isLoading={loadingOrders}
               />

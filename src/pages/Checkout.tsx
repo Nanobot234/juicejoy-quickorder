@@ -297,7 +297,7 @@ const Checkout = () => {
               <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
               
               <div className="space-y-4 mb-6">
-                {state.items.map((item) => (
+                {cartItems.map((item) => (
                   <div key={item.id} className="flex justify-between">
                     <div>
                       <span className="font-medium">{item.quantity}x</span> {item.name}
@@ -322,9 +322,9 @@ const Checkout = () => {
                     <span>${deliveryFee.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="border-t border-gray-200 my-2 pt-2 flex justify-between font-semibold">
+                <div className="border-t border-gray-200 my-2 pt-2 flex justify-between font-bold">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>${totalWithFees.toFixed(2)}</span>
                 </div>
               </div>
             </div>
