@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { updateSubscriptionStatus } from "@/services/subscriptionService";
-import { Calendar, PauseCircle, PlayCircle, XCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Calendar, PauseCircle, PlayCircle, XCircle, Settings } from "lucide-react";
+import { toast } from "sonner";
 
 interface SubscriptionCardProps {
   subscription: UserSubscription;
@@ -18,6 +20,26 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, onRef
     const success = await updateSubscriptionStatus(subscription.id, status);
     if (success) {
       onRefresh();
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        // Open Stripe Customer Portal in new tab
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error("No portal URL received");
+      }
+    } catch (error) {
+      console.error("Error opening customer portal:", error);
+      toast.error("Error opening subscription management. Please try again.");
     }
   };
 
@@ -60,43 +82,53 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, onRef
           </p>
         </div>
       </CardContent>
-      <CardFooter className="border-t pt-4">
-        {subscription.status === "active" && (
-          <Button 
-            variant="outline" 
-            className="mr-2 flex-1"
-            onClick={() => handleStatusUpdate("paused")}
-          >
-            <PauseCircle className="mr-1 h-4 w-4" /> Pause
-          </Button>
-        )}
-        {subscription.status === "paused" && (
-          <Button 
-            variant="outline" 
-            className="mr-2 flex-1"
-            onClick={() => handleStatusUpdate("active")}
-          >
-            <PlayCircle className="mr-1 h-4 w-4" /> Resume
-          </Button>
-        )}
-        {(subscription.status === "active" || subscription.status === "paused") && (
-          <Button 
-            variant="outline" 
-            className="flex-1 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-            onClick={() => handleStatusUpdate("cancelled")}
-          >
-            <XCircle className="mr-1 h-4 w-4" /> Cancel
-          </Button>
-        )}
-        {subscription.status === "cancelled" && (
-          <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={() => handleStatusUpdate("active")}
-          >
-            <PlayCircle className="mr-1 h-4 w-4" /> Reactivate
-          </Button>
-        )}
+      <CardFooter className="border-t pt-4 flex flex-col gap-2">
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={handleManageSubscription}
+        >
+          <Settings className="mr-1 h-4 w-4" /> Manage with Stripe
+        </Button>
+        
+        <div className="flex gap-2 w-full">
+          {subscription.status === "active" && (
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => handleStatusUpdate("paused")}
+            >
+              <PauseCircle className="mr-1 h-4 w-4" /> Pause
+            </Button>
+          )}
+          {subscription.status === "paused" && (
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => handleStatusUpdate("active")}
+            >
+              <PlayCircle className="mr-1 h-4 w-4" /> Resume
+            </Button>
+          )}
+          {(subscription.status === "active" || subscription.status === "paused") && (
+            <Button 
+              variant="outline" 
+              className="flex-1 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+              onClick={() => handleStatusUpdate("cancelled")}
+            >
+              <XCircle className="mr-1 h-4 w-4" /> Cancel
+            </Button>
+          )}
+          {subscription.status === "cancelled" && (
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => handleStatusUpdate("active")}
+            >
+              <PlayCircle className="mr-1 h-4 w-4" /> Reactivate
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

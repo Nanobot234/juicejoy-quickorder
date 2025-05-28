@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Layout from "@/components/Layout";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Form,
   FormControl,
@@ -22,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { OrderDetails, DeliveryMethod, PaymentMethod } from "@/types";
+import { DeliveryMethod, PaymentMethod } from "@/types";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -31,7 +32,7 @@ const formSchema = z.object({
   email: z.string().email("Valid email is required"),
   address: z.string().optional(),
   deliveryMethod: z.enum(["pickup", "delivery"]),
-  paymentMethod: z.enum(["cash", "card", "online"]),
+  paymentMethod: z.enum(["card"]), // Only card payments through Stripe
   notes: z.string().optional(),
 });
 
@@ -41,18 +42,13 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if cart is empty or user not authenticated
+  // Redirect if cart is empty
   React.useEffect(() => {
     if (cartItems.length === 0) {
       navigate("/menu");
       return;
     }
-    
-    if (!isAuthenticated) {
-      toast.error("Please login to complete your order");
-      navigate("/login");
-    }
-  }, [cartItems.length, navigate, isAuthenticated]);
+  }, [cartItems.length, navigate]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,7 +58,7 @@ const Checkout = () => {
       email: currentUser?.email || "",
       address: "",
       deliveryMethod: "pickup",
-      paymentMethod: "cash",
+      paymentMethod: "card",
       notes: "",
     },
   });
@@ -80,25 +76,44 @@ const Checkout = () => {
         return;
       }
       
-      const orderDetails: OrderDetails = {
+      const orderDetails = {
         name: values.name,
         phone: values.phone,
         email: values.email,
         address: values.address,
         deliveryMethod: values.deliveryMethod as DeliveryMethod,
         paymentMethod: values.paymentMethod as PaymentMethod,
+        notes: values.notes,
       };
+
+      const subtotal = total;
+      const tax = subtotal * 0.08;
+      const deliveryFee = deliveryMethod === "delivery" ? 3.99 : 0;
+      const totalWithFees = subtotal + tax + deliveryFee;
       
-      // Store order details and cart in session storage for confirmation page
-      sessionStorage.setItem("orderDetails", JSON.stringify(orderDetails));
-      sessionStorage.setItem("orderItems", JSON.stringify(cartItems));
-      sessionStorage.setItem("orderTotal", total.toString());
-      
-      // Navigate to confirmation page
-      navigate("/order-confirmation");
+      // Create Stripe payment session
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          items: cartItems,
+          orderDetails,
+          total: totalWithFees,
+          deliveryFee,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
     } catch (error) {
-      console.error("Error processing order:", error);
-      toast.error("Error processing your order. Please try again.");
+      console.error("Error processing payment:", error);
+      toast.error("Error processing your payment. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -220,49 +235,6 @@ const Checkout = () => {
 
                   <FormField
                     control={form.control}
-                    name="paymentMethod"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Payment Method</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex flex-col space-y-2"
-                          >
-                            <FormItem className="flex items-center space-x-2">
-                              <FormControl>
-                                <RadioGroupItem value="cash" />
-                              </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">
-                                Cash on {deliveryMethod === "pickup" ? "Pickup" : "Delivery"}
-                              </FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-2">
-                              <FormControl>
-                                <RadioGroupItem value="card" />
-                              </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">
-                                Credit/Debit Card
-                              </FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-2">
-                              <FormControl>
-                                <RadioGroupItem value="online" />
-                              </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">
-                                Online Payment (PayPal, Venmo)
-                              </FormLabel>
-                            </FormItem>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
                     name="notes"
                     render={({ field }) => (
                       <FormItem>
@@ -278,13 +250,18 @@ const Checkout = () => {
                     )}
                   />
 
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-blue-800 mb-2">Payment Method</h3>
+                    <p className="text-blue-700">Secure payment with Stripe (Credit/Debit Cards)</p>
+                  </div>
+
                   <div className="flex justify-end">
                     <Button 
                       type="submit" 
                       className="w-full md:w-auto bg-juicy-green hover:bg-juicy-green/90"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? "Processing..." : "Place Order"}
+                      {isSubmitting ? "Processing..." : "Pay with Stripe"}
                     </Button>
                   </div>
                 </form>

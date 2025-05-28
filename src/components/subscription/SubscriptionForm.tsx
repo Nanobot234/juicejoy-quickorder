@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { getSubscriptionPlans, createSubscription } from "@/services/subscriptionService";
+import { getSubscriptionPlans } from "@/services/subscriptionService";
+import { supabase } from "@/integrations/supabase/client";
 import { SubscriptionPlan, CartItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ interface FormValues {
   planId: string;
   address: string;
   deliveryDate: Date;
+  frequency: "weekly" | "bi-weekly" | "monthly";
 }
 
 const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ items, onSuccess }) => {
@@ -53,6 +55,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ items, onSuccess })
       planId: "",
       address: "",
       deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to one week from now
+      frequency: "weekly",
     },
   });
 
@@ -80,32 +83,53 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ items, onSuccess })
       return;
     }
 
+    if (!values.address.trim()) {
+      toast.error("Please provide a delivery address");
+      return;
+    }
+
     setIsLoading(true);
     
-    const subscriptionItems = items.map(item => ({
-      product_id: item.id,
-      quantity: item.quantity
-    }));
+    try {
+      // Create Stripe subscription session
+      const { data, error } = await supabase.functions.invoke('create-subscription', {
+        body: {
+          items,
+          planId: values.planId,
+          deliveryAddress: values.address,
+          frequency: values.frequency,
+        },
+      });
 
-    const success = await createSubscription(
-      currentUser.id,
-      values.planId,
-      values.deliveryDate.toISOString(),
-      values.address,
-      subscriptionItems
-    );
-
-    setIsLoading(false);
-
-    if (success) {
-      clearCart();
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        navigate("/customer-dashboard");
+      if (error) {
+        throw error;
       }
+
+      if (data?.url) {
+        // Store subscription details for after payment
+        sessionStorage.setItem("pendingSubscription", JSON.stringify({
+          planId: values.planId,
+          address: values.address,
+          deliveryDate: values.deliveryDate.toISOString(),
+          items,
+        }));
+
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      toast.error("Error creating subscription. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const itemsTotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
+  const deliveryFee = 3.99;
+  const totalWithDelivery = itemsTotal + deliveryFee;
 
   if (isLoading && plans.length === 0) {
     return (
@@ -123,25 +147,23 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ items, onSuccess })
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
-            name="planId"
+            name="frequency"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Subscription Plan</FormLabel>
+                <FormLabel>Delivery Frequency</FormLabel>
                 <Select 
                   onValueChange={field.onChange} 
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a subscription plan" />
+                      <SelectValue placeholder="Select delivery frequency" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {plans.map((plan) => (
-                      <SelectItem key={plan.id} value={plan.id}>
-                        {plan.name} - ${plan.price.toFixed(2)} ({plan.frequency})
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="weekly">Weekly - ${totalWithDelivery.toFixed(2)}/week</SelectItem>
+                    <SelectItem value="bi-weekly">Bi-weekly - ${totalWithDelivery.toFixed(2)}/2 weeks</SelectItem>
+                    <SelectItem value="monthly">Monthly - ${totalWithDelivery.toFixed(2)}/month</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -215,15 +237,22 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ items, onSuccess })
                   <span>${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Delivery Fee</span>
+                <span>${deliveryFee.toFixed(2)}</span>
+              </div>
             </div>
             <div className="border-t mt-3 pt-3">
               <div className="flex justify-between font-semibold">
-                <span>Total</span>
-                <span>
-                  ${items.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}
-                </span>
+                <span>Total per delivery</span>
+                <span>${totalWithDelivery.toFixed(2)}</span>
               </div>
             </div>
+          </div>
+
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h3 className="font-semibold text-blue-800 mb-2">Payment Method</h3>
+            <p className="text-blue-700">Secure recurring payment with Stripe</p>
           </div>
 
           <Button 
@@ -237,7 +266,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ items, onSuccess })
                 Processing...
               </>
             ) : (
-              "Create Subscription"
+              "Subscribe with Stripe"
             )}
           </Button>
         </form>
